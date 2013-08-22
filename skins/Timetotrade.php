@@ -82,24 +82,11 @@ class TimetotradeTemplate extends BaseTemplate {
 
         // Keep in mind that headelement defines the <body>
         //tag itself you shouldn't include one
-        $this->html( 'headelement' ); ?>
-        <div id='timetotradeBody'>
-            <div id='wikiNavigation'>
+        $this->html( 'headelement' );
+        echo $this->getHeaderHTML(); ?>
 
-                <p>Timetotrade Logo</p>
-
-                <form id='searchform' action="<?php $this->text( 'wgScript' ); ?>">
-                    <input type='hidden' name="title" value="<?php $this->text( 'searchtitle' ) ?>" />
-                    <?php echo $this->makeSearchInput(); ?>
-                </form>
-
-            </div>
-
-
-            <div id='content'>
-                <?php $this->html('bodytext') ?>
-            </div>
-
+        <div id='content'>
+            <?php $this->html('bodytext') ?>
         </div>
 
         <?php $this->printTrail(); ?>
@@ -108,4 +95,176 @@ class TimetotradeTemplate extends BaseTemplate {
         wfRestoreWarnings();
     }
 
+
+    /**
+     * Returns the html for the Timetotrade header bar with logo,
+     * generic navigation links, and the wiki search text box
+     *
+     * @return string HTML
+     */
+    public function getHeaderHTML() {
+        $html = <<<EOF
+<div id='wikiHeader'>
+    <header>
+
+        <a href="/">
+            <img src="//cdn.sensatus.org.uk/images/logos/25px.png" alt="timetotrade">
+        </a>
+
+        {$this->getNavigationHTML()}
+
+        <form id='searchform' action="<?php $this->text( 'wgScript' ); ?>">
+            <input type="text" name="search" accesskey="f" id="llookup" placeholder="Search help manual">
+        </form>
+
+    </header>
+</div>
+EOF;
+        return $html;
+    }
+
+    /**
+     * Contains generic timetotrade navigation links
+     *
+     * @return string HTML
+     */
+    public function getNavigationHTML() {
+
+        $html = <<<EOF
+<nav class="noJS">
+<ul>
+  <li class="hasChildren">
+    <a href="/summary.php" id="tl_portfolio">Portfolio</a>
+    <ul>
+      <li>
+        <a href="/summary.php" id="portfolio">Portfolio</a>
+      </li>
+      <li class="hasChildren">
+        <a href="/ledger.php" id="accounts">Accounts</a>
+        <ul>
+          <li class="hasChildren">
+            <a href="/ledger.php" id="actual_accounts">Actual</a>
+          </li>
+          <li class="hasChildren">
+            <a href="/ledger.php?category=simulated" id="simulated_accounts">Simulated</a>
+          </li>
+          <li>
+            <a href="/ledger.php?category=competition" id="competition_accounts">Competition</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <a href="/markets.php" id="markets">Markets</a>
+      </li>
+      <li>
+        <a href="/portfolio.php" id="watchlists">Watchlists</a>
+      </li>
+      <li class="hasChildren">
+        <a href="/competitions.php" id="competitions">Competitions</a>
+        <ul>
+          <li>
+            <a href="/competitions.php" id="enterCompetitions">Competitions</a>
+          </li>
+          <li>
+            <a href="/competitions.php?show=entry" id="createCompetitions">Create&nbsp;Competitions</a>
+          </li>
+        </ul>
+      </li>
+      <li class="hasChildren">
+        <a href="/performance_portfolio.php" id="performance">Performance</a>
+        <ul>
+          <li>
+            <a href="/performance_club.php">club</a>
+          </li>
+          <li>
+            <a href="/performance_portfolio.php" id="performanceWeighting">Weighting</a>
+          </li>
+          <li>
+            <a href="/performance_report.php" id="performancePortfolio">Portfolio</a>
+          </li>
+          <li>
+            <a href="/performance_investments.php" id="performanceInvestments">Investments</a>
+          </li>
+          <li>
+            <a href="/performance_taxation.php" id="performanceTaxation">Taxation</a>
+          </li>
+        </ul>
+      </li>
+      <li class="hasChildren">
+        <a href="/taxation.php" id="taxation">Taxation</a>
+        <ul>
+          <li>
+            <a href="/185new.php">Form&nbsp;185</a>
+          </li>
+          <li>
+            <a href="/cgt_uk.php" id="captialGains">Capital&nbsp;Gains</a>
+          </li>
+          <li>
+            <a href="/income_tax_personal.php" id="incomeTax">Income&nbsp;Tax</a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <a href="/reports.php" id="reports">Reports</a>
+      </li>
+    </ul>
+  </li>
+  <li class="hasChildren">
+    <a href="/trade.php?show=orderhistory" id="tl_trade">Trade</a>
+    <ul>
+      <li>
+        <a href="/trade.php?show=orderhistory" id="orderHistory">Order&nbsp;History</a>
+      </li>
+    </ul>
+  </li>
+  <li class="hasChildren">
+    <a href="/buildalert.php" id="tl_charts">Charts</a>
+    <ul>
+      <li>
+        <a href="/buildalert.php" id="fullWidth">Full&nbsp;Width</a>
+      </li>
+      <li>
+        <a href="/buildalert.php?fullscreen=0" id="tools">Tools</a>
+      </li>
+      <li>
+        <a href="#" onclick="tttpopup('/tearaway/'); return false" id="tearaway">Tearaway</a>
+      </li>
+    </ul>
+  </li>
+  <li class="hasChildren">
+    <a href="/community" id="tl_river">Community</a>
+    <ul>
+      <li>
+        <a href="/community" id="publicForum">Public&nbsp;Forum</a>
+      </li>
+      <li>
+        <a href="/managefiles.php" id="documentLibrary">Document&nbsp;Library</a>
+      </li>
+      <li>
+        <a href="http://blog.timetotrade.eu/" id="blog">Blog</a>
+      </li>
+    </ul>
+  </li>
+  <li class="hasChildren">
+    <a href="http://www.timetotrade.eu/wiki/" id="tl_help">Help</a>
+    <ul>
+      <li>
+        <a href="http://forum.timetotrade.eu/forums/help_videos/" id="helpVideos">Help&nbsp;Videos</a>
+      </li>
+      <li>
+        <a href="http://wiki.timetotrade.eu/" id="helpManual">Help&nbsp;Manual</a>
+      </li>
+      <li>
+        <a href="/packages.php" id="packages">Pricing</a>
+      </li>
+      <li>
+        <a href="/tickets.php?view=createticket" id="contactUs">Contact&nbsp;Us</a>
+      </li>
+    </ul>
+  </li>
+</ul>
+</nav>
+EOF;
+        return $html;
+    }
 }
