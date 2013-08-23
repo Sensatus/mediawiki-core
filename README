@@ -1,3 +1,19 @@
+== 23 Aug 2013 ==
+
+The timetotrade repo was based on release 1.21 of the MediaWiki code.
+
+To add an extension create a subtree, for example the following will create
+a CategoryTree folder in the extensions folder:
+
+git subtree add --prefix=extensions/CategoryTree https://github.com/wikimedia/mediawiki-extensions-CategoryTree.git master
+
+To update a subtree extension:
+
+git subtree pull --prefix=extensions/CategoryTree https://github.com/wikimedia/mediawiki-extensions-CategoryTree.git master
+
+
+== About ==
+
 For system requirements, installation and upgrade details, see the files
 RELEASE-NOTES, INSTALL, and UPGRADE.
 
