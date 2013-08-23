@@ -144,111 +144,108 @@ EOF;
 <nav class="noJS">
 <ul>
   <li class="hasChildren">
-    <a href="/summary.php" id="tl_portfolio">Portfolio</a>
+    <a href="//timetotrade.eu/summary.php" id="tl_portfolio">Portfolio</a>
     <ul>
       <li>
-        <a href="/summary.php" id="portfolio">Portfolio</a>
+        <a href="//timetotrade.eu/summary.php" id="portfolio">Portfolio</a>
       </li>
       <li class="hasChildren">
-        <a href="/ledger.php" id="accounts">Accounts</a>
+        <a href="//timetotrade.eu/ledger.php" id="accounts">Accounts</a>
         <ul>
-          <li class="hasChildren">
-            <a href="/ledger.php" id="actual_accounts">Actual</a>
-          </li>
-          <li class="hasChildren">
-            <a href="/ledger.php?category=simulated" id="simulated_accounts">Simulated</a>
+          <li>
+            <a href="//timetotrade.eu/ledger.php" id="actual_accounts">Actual</a>
           </li>
           <li>
-            <a href="/ledger.php?category=competition" id="competition_accounts">Competition</a>
+            <a href="//timetotrade.eu/ledger.php?category=simulated" id="simulated_accounts">Simulated</a>
+          </li>
+          <li>
+            <a href="//timetotrade.eu/ledger.php?category=competition" id="competition_accounts">Competition</a>
           </li>
         </ul>
       </li>
       <li>
-        <a href="/markets.php" id="markets">Markets</a>
+        <a href="//timetotrade.eu/markets.php" id="markets">Markets</a>
       </li>
       <li>
-        <a href="/portfolio.php" id="watchlists">Watchlists</a>
+        <a href="//timetotrade.eu/portfolio.php" id="watchlists">Watchlists</a>
       </li>
       <li class="hasChildren">
-        <a href="/competitions.php" id="competitions">Competitions</a>
+        <a href="//timetotrade.eu/competitions.php" id="competitions">Competitions</a>
         <ul>
           <li>
-            <a href="/competitions.php" id="enterCompetitions">Competitions</a>
+            <a href="//timetotrade.eu/competitions.php" id="enterCompetitions">Competitions</a>
           </li>
           <li>
-            <a href="/competitions.php?show=entry" id="createCompetitions">Create&nbsp;Competitions</a>
+            <a href="//timetotrade.eu/competitions.php?show=entry" id="createCompetitions">Create&nbsp;Competitions</a>
           </li>
         </ul>
       </li>
       <li class="hasChildren">
-        <a href="/performance_portfolio.php" id="performance">Performance</a>
+        <a href="//timetotrade.eu/performance_portfolio.php" id="performance">Performance</a>
         <ul>
           <li>
-            <a href="/performance_club.php">club</a>
+            <a href="//timetotrade.eu/performance_club.php">club</a>
           </li>
           <li>
-            <a href="/performance_portfolio.php" id="performanceWeighting">Weighting</a>
+            <a href="//timetotrade.eu/performance_portfolio.php" id="performanceWeighting">Weighting</a>
           </li>
           <li>
-            <a href="/performance_report.php" id="performancePortfolio">Portfolio</a>
+            <a href="//timetotrade.eu/performance_report.php" id="performancePortfolio">Portfolio</a>
           </li>
           <li>
-            <a href="/performance_investments.php" id="performanceInvestments">Investments</a>
+            <a href="//timetotrade.eu/performance_investments.php" id="performanceInvestments">Investments</a>
           </li>
           <li>
-            <a href="/performance_taxation.php" id="performanceTaxation">Taxation</a>
+            <a href="//timetotrade.eu/performance_taxation.php" id="performanceTaxation">Taxation</a>
           </li>
         </ul>
       </li>
       <li class="hasChildren">
-        <a href="/taxation.php" id="taxation">Taxation</a>
+        <a href="//timetotrade.eu/taxation.php" id="taxation">Taxation</a>
         <ul>
           <li>
-            <a href="/185new.php">Form&nbsp;185</a>
+            <a href="//timetotrade.eu/185new.php">Form&nbsp;185</a>
           </li>
           <li>
-            <a href="/cgt_uk.php" id="captialGains">Capital&nbsp;Gains</a>
+            <a href="//timetotrade.eu/cgt_uk.php" id="captialGains">Capital&nbsp;Gains</a>
           </li>
           <li>
-            <a href="/income_tax_personal.php" id="incomeTax">Income&nbsp;Tax</a>
+            <a href="//timetotrade.eu/income_tax_personal.php" id="incomeTax">Income&nbsp;Tax</a>
           </li>
         </ul>
       </li>
       <li>
-        <a href="/reports.php" id="reports">Reports</a>
+        <a href="//timetotrade.eu/reports.php" id="reports">Reports</a>
       </li>
     </ul>
   </li>
   <li class="hasChildren">
-    <a href="/trade.php?show=orderhistory" id="tl_trade">Trade</a>
+    <a href="//timetotrade.eu/trade.php?show=orderhistory" id="tl_trade">Trade</a>
     <ul>
       <li>
-        <a href="/trade.php?show=orderhistory" id="orderHistory">Order&nbsp;History</a>
+        <a href="//timetotrade.eu/trade.php?show=orderhistory" id="orderHistory">Order&nbsp;History</a>
       </li>
     </ul>
   </li>
   <li class="hasChildren">
-    <a href="/buildalert.php" id="tl_charts">Charts</a>
+    <a href="//timetotrade.eu/buildalert.php" id="tl_charts">Charts</a>
     <ul>
       <li>
-        <a href="/buildalert.php" id="fullWidth">Full&nbsp;Width</a>
+        <a href="//timetotrade.eu/buildalert.php" id="fullWidth">Full&nbsp;Width</a>
       </li>
       <li>
-        <a href="/buildalert.php?fullscreen=0" id="tools">Tools</a>
-      </li>
-      <li>
-        <a href="#" onclick="tttpopup('/tearaway/'); return false" id="tearaway">Tearaway</a>
+        <a href="//timetotrade.eu/buildalert.php?fullscreen=0" id="tools">Tools</a>
       </li>
     </ul>
   </li>
   <li class="hasChildren">
-    <a href="/community" id="tl_river">Community</a>
+    <a href="//timetotrade.eu/community" id="tl_river">Community</a>
     <ul>
       <li>
-        <a href="/community" id="publicForum">Public&nbsp;Forum</a>
+        <a href="//timetotrade.eu/community" id="publicForum">Public&nbsp;Forum</a>
       </li>
       <li>
-        <a href="/managefiles.php" id="documentLibrary">Document&nbsp;Library</a>
+        <a href="//timetotrade.eu/managefiles.php" id="documentLibrary">Document&nbsp;Library</a>
       </li>
       <li>
         <a href="http://blog.timetotrade.eu/" id="blog">Blog</a>
@@ -265,10 +262,10 @@ EOF;
         <a href="http://wiki.timetotrade.eu/" id="helpManual">Help&nbsp;Manual</a>
       </li>
       <li>
-        <a href="/packages.php" id="packages">Pricing</a>
+        <a href="//timetotrade.eu/packages.php" id="packages">Pricing</a>
       </li>
       <li>
-        <a href="/tickets.php?view=createticket" id="contactUs">Contact&nbsp;Us</a>
+        <a href="//timetotrade.eu/tickets.php?view=createticket" id="contactUs">Contact&nbsp;Us</a>
       </li>
     </ul>
   </li>
