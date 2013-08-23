@@ -154,7 +154,7 @@ abstract class EmbedVideo {
 			"<param name=\"movie\" value=\"{$url}\"></param>" .
 			"<param name=\"wmode\" value=\"transparent\"></param>" .
 			"<embed src=\"{$url}\" type=\"application/x-shockwave-flash\"" .
-			" wmode=\"transparent\" width=\"{$width}\" height=\"{$height}\">" .
+			" wmode=\"transparent\" allowfullscreen=\"true\" width=\"{$width}\" height=\"{$height}\">" .
 			"</embed></object>";
 		return $clause;
 	}
@@ -203,7 +203,7 @@ abstract class EmbedVideo {
 			"<param name=\"movie\" value=\"{$url}\"></param>" .
 			"<param name=\"wmode\" value=\"transparent\"></param>" .
 			"<embed src=\"{$url}\" type=\"application/x-shockwave-flash\"" .
-			" wmode=\"transparent\" width=\"{$width}\" height=\"{$height}\"></embed>" .
+			" wmode=\"transparent\" allowfullscreen=\"true\" width=\"{$width}\" height=\"{$height}\"></embed>" .
 			"</object>" .
 			"<div class=\"thumbcaption\">" .
 			$desc .
@@ -242,7 +242,7 @@ abstract class EmbedVideo {
 				$width = $entry['default_width'];
 			}
 			else {
-				$width = 425;
+				$width = 500;
 			}
 			return true;
 		}
