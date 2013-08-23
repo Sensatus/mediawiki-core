@@ -127,7 +127,7 @@ class TimetotradeTemplate extends BaseTemplate {
 <div id='wikiHeader'>
     <header>
 
-        <a href="/">
+        <a href="//timetotrade.eu">
             <img src="//cdn.sensatus.org.uk/images/logos/25px.png" alt="timetotrade">
         </a>
 
