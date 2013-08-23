@@ -1805,7 +1805,7 @@ abstract class BaseTemplate extends QuickTemplate {
 
 	function makeSearchInput( $attrs = array() ) {
 		$realAttrs = array(
-			'type' => 'search',
+			'type' => 'text',
 			'name' => 'search',
 			'value' => isset( $this->data['search'] ) ? $this->data['search'] : '',
 		);

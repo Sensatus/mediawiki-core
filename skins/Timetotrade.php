@@ -113,16 +113,26 @@ class TimetotradeTemplate extends BaseTemplate {
 
         {$this->getNavigationHTML()}
 
-        <form id='searchform' action="<?php $this->text( 'wgScript' ); ?>">
-            <input type="text" name="search" accesskey="f" id="llookup" placeholder="Search help manual">
-        </form>
+        {$this->searchBox()}
 
     </header>
 </div>
 EOF;
+
+//        <form id='searchform' action="<? php $this->text('wgScript') php>">
+//            <input type="text" name="search" accesskey="f" id="llookup" placeholder="Search help manual">
+//        </form>
         return $html;
     }
 
+    function searchBox() {
+        $params = array( "id" => "searchInput", "type" => "text" );
+        $html = '<form action="" id="searchform" class="symbolLookup">';
+        $html .= '<input type="hidden" name="title" value="Special:Search"/>';
+        $html .= $this->makeSearchInput($params);
+        $html .= '</form>';
+        return $html;
+    }
     /**
      * Contains generic timetotrade navigation links
      *

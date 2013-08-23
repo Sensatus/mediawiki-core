@@ -347,10 +347,10 @@ class Html {
 			}
 
 			// Simple checks using $attribDefaults
-			if ( isset( $attribDefaults[$element][$lcattrib] ) &&
-			$attribDefaults[$element][$lcattrib] == $value ) {
-				unset( $attribs[$attrib] );
-			}
+//			if ( isset( $attribDefaults[$element][$lcattrib] ) &&
+//			$attribDefaults[$element][$lcattrib] == $value ) {
+//				unset( $attribs[$attrib] );
+//			}
 
 			if ( $lcattrib == 'class' && $value == '' ) {
 				unset( $attribs[$attrib] );
