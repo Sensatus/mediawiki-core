@@ -138,10 +138,6 @@ class TimetotradeTemplate extends BaseTemplate {
     </header>
 </div>
 EOF;
-
-//        <form id='searchform' action="<? php $this->text('wgScript') php>">
-//            <input type="text" name="search" accesskey="f" id="llookup" placeholder="Search help manual">
-//        </form>
         return $html;
     }
 
