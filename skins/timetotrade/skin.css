@@ -21,3 +21,16 @@
 .CategoryTreeLabelPage {
     font-style: normal;
 }
+
+.wikiNavigation {
+    width: 200px;
+    padding: 10px;
+    vertical-align: top;
+}
+.wikiTable {
+    vertical-align: top;
+}
+
+.subtle {
+    line-height: 2em;
+}
