@@ -661,7 +661,7 @@ class CategoryTree {
 		} elseif ( $hideprefix == CT_HIDEPREFIX_AUTO ) {
 			$hideprefix = ( $mode == CT_MODE_CATEGORIES );
 		} elseif ( $hideprefix == CT_HIDEPREFIX_CATEGORIES ) {
-			$hideprefix = ( $ns == NS_CATEGORY );
+			$hideprefix = true; #( $ns == NS_CATEGORY ); //Formerly only set the hideprefix if the name space was set correctly
 		} else {
 			$hideprefix = true;
 		}
@@ -670,6 +670,14 @@ class CategoryTree {
 		# patch contributed by Manuel Schneider <manuel.schneider@wikimedia.ch>, Bug 8011
 		if ( $hideprefix ) {
 			$label = htmlspecialchars( $title->getText() );
+
+            //HACK! Namespace is not being removed, probably due to it
+            //not being configured correctly.
+            $matches = explode(':', $label);
+            if (isset($matches[1])) {
+                $label = trim($matches[1]);
+            }
+
 		} else {
 			$label = htmlspecialchars( $title->getPrefixedText() );
 		}
