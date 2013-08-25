@@ -18,6 +18,21 @@ var categoryTree = {
 	showToggles: function() {
 		$( 'span.CategoryTreeToggle' ).css( 'display', 'inline' );
 	},
+
+    /**
+     * Searches the Category 'Toggles' and expand if currently
+     * collapsed. This is primarily to enable templates to
+     * expand a selected category rather than having to hard
+     * wire in each page in the selected category.
+     */
+    expandCategory: function() {
+        $('.CategoryTreeToggle').each(function(i, link) {
+            var $link = $(link);
+            if ( $link.data( 'ct-expand' ) === 'expand' ) {
+                categoryTree.expandNode( $link );
+            }
+        });
+    },
 	
 	/**
 	 * Handles clicks on the expand buttons, and calls the appropriate function
@@ -170,6 +185,7 @@ var categoryTree = {
 $( function( $ ) {
 	$( '.CategoryTreeToggle' ).click( categoryTree.handleNode );
 	categoryTree.showToggles();
+    categoryTree.expandCategory();
 } );
 
 } )( jQuery, mediaWiki );
