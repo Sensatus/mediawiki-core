@@ -1809,7 +1809,8 @@ abstract class BaseTemplate extends QuickTemplate {
 			'name' => 'search',
 			'value' => isset( $this->data['search'] ) ? $this->data['search'] : '',
 		);
-		$realAttrs = array_merge( $realAttrs, Linker::tooltipAndAccesskeyAttribs( 'search' ), $attrs );
+		#$realAttrs = array_merge( $realAttrs, Linker::tooltipAndAccesskeyAttribs( 'search' ), $attrs );
+        $realAttrs = array_merge( $realAttrs, $attrs );
 		return Html::element( 'input', $realAttrs );
 	}
 

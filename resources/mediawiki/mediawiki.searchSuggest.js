@@ -198,7 +198,8 @@
 
 		// Placeholder text for search box
 		$searchInput
-			.attr( 'placeholder', mw.msg( 'searchsuggest-search' ) )
+			//.attr( 'placeholder', mw.msg( 'searchsuggest-search' ) )
+            .attr( 'placeholder', 'Search help manual' )
 			.placeholder();
 
 		// Special suggestions functionality for skin-provided search box
