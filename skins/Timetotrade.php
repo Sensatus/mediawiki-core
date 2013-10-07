@@ -51,15 +51,15 @@ class SkinTimetotrade extends SkinTemplate {
         $out->addModuleStyles( "skins.timetotrade" );
 
         $out->addHeadItem('timetotradeCSS',
-            '<link rel="stylesheet" href="//timetotrade.eu/sensatus_css.php">'
+            '<link rel="stylesheet" href="//cdn.timetotrade.eu/sensatus_css.php">'
         );
 
         $out->addHeadItem('timetotradeLess',
-            '<link rel="stylesheet" href="//cdn.sensatus.org.uk/min/css/less/site.css">'
+            '<link rel="stylesheet" href="//cdn.timetotrade.eu/min/css/less/site.css">'
         );
 
         $out->addHeadItem('timetotradeAlerts',
-            '<link rel="stylesheet" href="//cdn.sensatus.org.uk/alerts.css">'
+            '<link rel="stylesheet" href="//cdn.timetotrade.eu/alerts.css">'
         );
     }
 }
@@ -128,7 +128,7 @@ class TimetotradeTemplate extends BaseTemplate {
     <header>
 
         <a href="//timetotrade.eu">
-            <img src="//cdn.sensatus.org.uk/images/logos/25px.png" alt="timetotrade">
+            <img src="//cdn.timetotrade.eu/images/logos/25px.png" alt="timetotrade">
         </a>
 
         {$this->getNavigationHTML()}
