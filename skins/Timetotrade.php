@@ -236,10 +236,10 @@ EOF;
     </ul>
   </li>
   <li class="hasChildren">
-    <a href="//timetotrade.eu/trade.php?show=orderhistory" id="tl_trade">Trade</a>
+    <a href="//timetotrade.eu/broker/registration/" id="tl_trade">Trade</a>
     <ul>
       <li>
-        <a href="//timetotrade.eu/trade.php?show=orderhistory" id="orderHistory">Order&nbsp;History</a>
+        <a href="//timetotrade.eu/broker/registration/">Open Trading Account</a>
       </li>
     </ul>
   </li>
