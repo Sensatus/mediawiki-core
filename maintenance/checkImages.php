@@ -20,7 +20,7 @@
  * @file
  * @ingroup Maintenance
  */
-require_once( __DIR__ . '/Maintenance.php' );
+require_once __DIR__ . '/Maintenance.php';
 
 /**
  * Maintenance script to check images to see if they exist, are readable, etc.
@@ -42,44 +42,38 @@ class CheckImages extends Maintenance {
 		$numImages = 0;
 		$numGood = 0;
 
+		$repo = RepoGroup::singleton()->getLocalRepo();
 		do {
 			$res = $dbr->select( 'image', '*', array( 'img_name > ' . $dbr->addQuotes( $start ) ),
 				__METHOD__, array( 'LIMIT' => $this->mBatchSize ) );
 			foreach ( $res as $row ) {
 				$numImages++;
 				$start = $row->img_name;
-				$file = RepoGroup::singleton()->getLocalRepo()->newFileFromRow( $row );
+				$file = $repo->newFileFromRow( $row );
 				$path = $file->getPath();
 				if ( !$path ) {
 					$this->output( "{$row->img_name}: not locally accessible\n" );
 					continue;
 				}
-				wfSuppressWarnings();
-				$stat = stat( $file->getPath() );
-				wfRestoreWarnings();
-				if ( !$stat ) {
+				$size = $repo->getFileSize( $file->getPath() );
+				if ( $size === false ) {
 					$this->output( "{$row->img_name}: missing\n" );
 					continue;
 				}
 
-				if ( $stat['mode'] & 040000 ) {
-					$this->output( "{$row->img_name}: is a directory\n" );
-					continue;
-				}
-
-				if ( $stat['size'] == 0 && $row->img_size != 0 ) {
+				if ( $size == 0 && $row->img_size != 0 ) {
 					$this->output( "{$row->img_name}: truncated, was {$row->img_size}\n" );
 					continue;
 				}
 
-				if ( $stat['size'] != $row->img_size ) {
-					$this->output( "{$row->img_name}: size mismatch DB={$row->img_size}, actual={$stat['size']}\n" );
+				if ( $size != $row->img_size ) {
+					$this->output( "{$row->img_name}: size mismatch DB={$row->img_size}, "
+						. "actual={$size}\n" );
 					continue;
 				}
 
 				$numGood++;
 			}
-
 		} while ( $res->numRows() );
 
 		$this->output( "Good images: $numGood/$numImages\n" );
@@ -87,4 +81,4 @@ class CheckImages extends Maintenance {
 }
 
 $maintClass = "CheckImages";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

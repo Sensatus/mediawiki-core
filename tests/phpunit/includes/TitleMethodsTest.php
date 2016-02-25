@@ -4,13 +4,12 @@
  * @group ContentHandler
  * @group Database
  *
- * @note: We don't make assumptions about the main namespace.
- *        But we do expect the Help namespace to contain Wikitext.
- *
+ * @note We don't make assumptions about the main namespace.
+ *       But we do expect the Help namespace to contain Wikitext.
  */
-class TitleMethodsTest extends MediaWikiTestCase {
+class TitleMethodsTest extends MediaWikiLangTestCase {
 
-	public function setup() {
+	protected function setUp() {
 		global $wgContLang;
 
 		parent::setUp();
@@ -34,7 +33,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 		$wgContLang->resetNamespaces(); # reset namespace cache
 	}
 
-	public function teardown() {
+	protected function tearDown() {
 		global $wgContLang;
 
 		parent::tearDown();
@@ -57,6 +56,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideEquals
+	 * @covers Title::equals
 	 */
 	public function testEquals( $titleA, $titleB, $expectedBool ) {
 		$titleA = Title::newFromText( $titleA );
@@ -81,12 +81,16 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideInNamespace
+	 * @covers Title::inNamespace
 	 */
 	public function testInNamespace( $title, $ns, $expectedBool ) {
 		$title = Title::newFromText( $title );
 		$this->assertEquals( $expectedBool, $title->inNamespace( $ns ) );
 	}
 
+	/**
+	 * @covers Title::inNamespaces
+	 */
 	public function testInNamespaces() {
 		$mainpage = Title::newFromText( 'Main Page' );
 		$this->assertTrue( $mainpage->inNamespaces( NS_MAIN, NS_USER ) );
@@ -110,6 +114,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideHasSubjectNamespace
+	 * @covers Title::hasSubjectNamespace
 	 */
 	public function testHasSubjectNamespace( $title, $ns, $expectedBool ) {
 		$title = Title::newFromText( $title );
@@ -143,6 +148,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider dataGetContentModel
+	 * @covers Title::getContentModel
 	 */
 	public function testGetContentModel( $title, $expectedModelId ) {
 		$title = Title::newFromText( $title );
@@ -151,6 +157,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider dataGetContentModel
+	 * @covers Title::hasContentModel
 	 */
 	public function testHasContentModel( $title, $expectedModelId ) {
 		$title = Title::newFromText( $title );
@@ -181,12 +188,12 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsCssOrJsPage
+	 * @covers Title::isCssOrJsPage
 	 */
 	public function testIsCssOrJsPage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
 		$this->assertEquals( $expectedBool, $title->isCssOrJsPage() );
 	}
-
 
 	public static function provideIsCssJsSubpage() {
 		return array(
@@ -210,6 +217,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsCssJsSubpage
+	 * @covers Title::isCssJsSubpage
 	 */
 	public function testIsCssJsSubpage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
@@ -230,6 +238,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsCssSubpage
+	 * @covers Title::isCssSubpage
 	 */
 	public function testIsCssSubpage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
@@ -250,6 +259,7 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsJsSubpage
+	 * @covers Title::isJsSubpage
 	 */
 	public function testIsJsSubpage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
@@ -281,10 +291,49 @@ class TitleMethodsTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsWikitextPage
+	 * @covers Title::isWikitextPage
 	 */
 	public function testIsWikitextPage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
 		$this->assertEquals( $expectedBool, $title->isWikitextPage() );
 	}
 
+	public static function provideGetOtherPage() {
+		return array(
+			array( 'Main Page', 'Talk:Main Page' ),
+			array( 'Talk:Main Page', 'Main Page' ),
+			array( 'Help:Main Page', 'Help talk:Main Page' ),
+			array( 'Help talk:Main Page', 'Help:Main Page' ),
+			array( 'Special:FooBar', null ),
+		);
+	}
+
+	/**
+	 * @dataProvider provideGetOtherpage
+	 * @covers Title::getOtherPage
+	 *
+	 * @param string $text
+	 * @param string|null $expected
+	 */
+	public function testGetOtherPage( $text, $expected ) {
+		if ( $expected === null ) {
+			$this->setExpectedException( 'MWException' );
+		}
+
+		$title = Title::newFromText( $text );
+		$this->assertEquals( $expected, $title->getOtherPage()->getPrefixedText() );
+	}
+
+	public function testClearCaches() {
+		$linkCache = LinkCache::singleton();
+
+		$title1 = Title::newFromText( 'Foo' );
+		$linkCache->addGoodLinkObj( 23, $title1 );
+
+		Title::clearCaches();
+
+		$title2 = Title::newFromText( 'Foo' );
+		$this->assertNotSame( $title1, $title2, 'title cache should be empty' );
+		$this->assertEquals( 0, $linkCache->getGoodLinkID( 'Foo' ), 'link cache should be empty' );
+	}
 }

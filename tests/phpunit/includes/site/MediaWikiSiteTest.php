@@ -26,12 +26,15 @@
  *
  * @group Site
  *
- * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
 class MediaWikiSiteTest extends SiteTest {
 
 	public function testNormalizePageTitle() {
+		$this->setMwGlobals( array(
+			'wgCapitalLinks' => true,
+		) );
+
 		$site = new MediaWikiSite();
 		$site->setGlobalId( 'enwiki' );
 
@@ -46,14 +49,30 @@ class MediaWikiSiteTest extends SiteTest {
 			// url, filepath, path arg, expected
 			array( 'https://en.wikipedia.org', '/w/$1', 'api.php', 'https://en.wikipedia.org/w/api.php' ),
 			array( 'https://en.wikipedia.org', '/w/', 'api.php', 'https://en.wikipedia.org/w/' ),
-			array( 'https://en.wikipedia.org', '/foo/page.php?name=$1', 'api.php', 'https://en.wikipedia.org/foo/page.php?name=api.php' ),
-			array( 'https://en.wikipedia.org', '/w/$1', '', 'https://en.wikipedia.org/w/' ),
-			array( 'https://en.wikipedia.org', '/w/$1', 'foo/bar/api.php', 'https://en.wikipedia.org/w/foo/bar/api.php' ),
+			array(
+				'https://en.wikipedia.org',
+				'/foo/page.php?name=$1',
+				'api.php',
+				'https://en.wikipedia.org/foo/page.php?name=api.php'
+			),
+			array(
+				'https://en.wikipedia.org',
+				'/w/$1',
+				'',
+				'https://en.wikipedia.org/w/'
+			),
+			array(
+				'https://en.wikipedia.org',
+				'/w/$1',
+				'foo/bar/api.php',
+				'https://en.wikipedia.org/w/foo/bar/api.php'
+			),
 		);
 	}
 
 	/**
 	 * @dataProvider fileUrlProvider
+	 * @covers MediaWikiSite::getFileUrl
 	 */
 	public function testGetFileUrl( $url, $filePath, $pathArgument, $expected ) {
 		$site = new MediaWikiSite();
@@ -62,7 +81,7 @@ class MediaWikiSiteTest extends SiteTest {
 		$this->assertEquals( $expected, $site->getFileUrl( $pathArgument ) );
 	}
 
-	public function provideGetPageUrl() {
+	public static function provideGetPageUrl() {
 		return array(
 			// path, page, expected substring
 			array( 'http://acme.test/wiki/$1', 'Berlin', '/wiki/Berlin' ),
@@ -77,6 +96,7 @@ class MediaWikiSiteTest extends SiteTest {
 
 	/**
 	 * @dataProvider provideGetPageUrl
+	 * @covers MediaWikiSite::getPageUrl
 	 */
 	public function testGetPageUrl( $path, $page, $expected ) {
 		$site = new MediaWikiSite();
@@ -85,5 +105,4 @@ class MediaWikiSiteTest extends SiteTest {
 		$this->assertContains( $path, $site->getPageUrl() );
 		$this->assertContains( $expected, $site->getPageUrl( $page ) );
 	}
-
 }

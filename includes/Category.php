@@ -26,7 +26,7 @@
  * like to refresh link counts, the objects will be appropriately reinitialized.
  * Member variables are lazy-initialized.
  *
- * TODO: Move some stuff from CategoryPage.php to here, and use that.
+ * @todo Move some stuff from CategoryPage.php to here, and use that.
  */
 class Category {
 	/** Name of the category, normalized to DB-key form */
@@ -40,7 +40,8 @@ class Category {
 	/** Counts of membership (cat_pages, cat_subcats, cat_files) */
 	private $mPages = null, $mSubcats = null, $mFiles = null;
 
-	private function __construct() { }
+	private function __construct() {
+	}
 
 	/**
 	 * Set up all member variables using a database query.
@@ -59,8 +60,6 @@ class Category {
 			return true;
 		}
 
-		wfProfileIn( __METHOD__ );
-
 		$dbr = wfGetDB( DB_SLAVE );
 		$row = $dbr->selectRow(
 			'category',
@@ -69,12 +68,11 @@ class Category {
 			__METHOD__
 		);
 
-		wfProfileOut( __METHOD__ );
-
 		if ( !$row ) {
 			# Okay, there were no contents.  Nothing to initialize.
 			if ( $this->mTitle ) {
-				# If there is a title object but no record in the category table, treat this as an empty category
+				# If there is a title object but no record in the category table,
+				# treat this as an empty category.
 				$this->mID = false;
 				$this->mName = $this->mTitle->getDBkey();
 				$this->mPages = 0;
@@ -127,8 +125,8 @@ class Category {
 	/**
 	 * Factory function.
 	 *
-	 * @param $title Title for the category page
-	 * @return Category|bool on a totally invalid name
+	 * @param Title $title Title for the category page
+	 * @return Category|bool On a totally invalid name
 	 */
 	public static function newFromTitle( $title ) {
 		$cat = new self();
@@ -142,7 +140,7 @@ class Category {
 	/**
 	 * Factory function.
 	 *
-	 * @param $id Integer: a category id
+	 * @param int $id A category id
 	 * @return Category
 	 */
 	public static function newFromID( $id ) {
@@ -154,11 +152,13 @@ class Category {
 	/**
 	 * Factory function, for constructing a Category object from a result set
 	 *
-	 * @param $row result set row, must contain the cat_xxx fields. If the fields are null,
-	 *        the resulting Category object will represent an empty category if a title object
-	 *        was given. If the fields are null and no title was given, this method fails and returns false.
-	 * @param Title $title optional title object for the category represented by the given row.
-	 *        May be provided if it is already known, to avoid having to re-create a title object later.
+	 * @param object $row Result set row, must contain the cat_xxx fields. If the
+	 *   fields are null, the resulting Category object will represent an empty
+	 *   category if a title object was given. If the fields are null and no
+	 *   title was given, this method fails and returns false.
+	 * @param Title $title Optional title object for the category represented by
+	 *   the given row. May be provided if it is already known, to avoid having
+	 *   to re-create a title object later.
 	 * @return Category
 	 */
 	public static function newFromRow( $row, $title = null ) {
@@ -176,7 +176,8 @@ class Category {
 				# but we can't know that here...
 				return false;
 			} else {
-				$cat->mName = $title->getDBkey(); # if we have a title object, fetch the category name from there
+				# if we have a title object, fetch the category name from there
+				$cat->mName = $title->getDBkey();
 			}
 
 			$cat->mID = false;
@@ -194,27 +195,37 @@ class Category {
 		return $cat;
 	}
 
-	/** @return mixed DB key name, or false on failure */
+	/**
+	 * @return mixed DB key name, or false on failure
+	 */
 	public function getName() {
 		return $this->getX( 'mName' );
 	}
 
-	/** @return mixed Category ID, or false on failure */
+	/**
+	 * @return mixed Category ID, or false on failure
+	 */
 	public function getID() {
 		return $this->getX( 'mID' );
 	}
 
-	/** @return mixed Total number of member pages, or false on failure */
+	/**
+	 * @return mixed Total number of member pages, or false on failure
+	 */
 	public function getPageCount() {
 		return $this->getX( 'mPages' );
 	}
 
-	/** @return mixed Number of subcategories, or false on failure */
+	/**
+	 * @return mixed Number of subcategories, or false on failure
+	 */
 	public function getSubcatCount() {
 		return $this->getX( 'mSubcats' );
 	}
 
-	/** @return mixed Number of member files, or false on failure */
+	/**
+	 * @return mixed Number of member files, or false on failure
+	 */
 	public function getFileCount() {
 		return $this->getX( 'mFiles' );
 	}
@@ -238,12 +249,11 @@ class Category {
 	/**
 	 * Fetch a TitleArray of up to $limit category members, beginning after the
 	 * category sort key $offset.
-	 * @param $limit integer
-	 * @param $offset string
-	 * @return TitleArray object for category members.
+	 * @param int $limit
+	 * @param string $offset
+	 * @return TitleArray TitleArray object for category members.
 	 */
 	public function getMembers( $limit = false, $offset = '' ) {
-		wfProfileIn( __METHOD__ );
 
 		$dbr = wfGetDB( DB_SLAVE );
 
@@ -269,13 +279,12 @@ class Category {
 			)
 		);
 
-		wfProfileOut( __METHOD__ );
-
 		return $result;
 	}
 
 	/**
 	 * Generic accessor
+	 * @param string $key
 	 * @return bool
 	 */
 	private function getX( $key ) {
@@ -302,10 +311,8 @@ class Category {
 			}
 		}
 
-		wfProfileIn( __METHOD__ );
-
 		$dbw = wfGetDB( DB_MASTER );
-		$dbw->begin( __METHOD__ );
+		$dbw->startAtomic( __METHOD__ );
 
 		# Insert the row if it doesn't exist yet (e.g., this is being run via
 		# update.php from a pre-1.16 schema).  TODO: This will cause lots and
@@ -345,9 +352,7 @@ class Category {
 			array( 'cat_title' => $this->mName ),
 			__METHOD__
 		);
-		$dbw->commit( __METHOD__ );
-
-		wfProfileOut( __METHOD__ );
+		$dbw->endAtomic( __METHOD__ );
 
 		# Now we should update our local counts.
 		$this->mPages = $result->pages;

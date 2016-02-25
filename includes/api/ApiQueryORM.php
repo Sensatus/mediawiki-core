@@ -104,7 +104,7 @@ abstract class ApiQueryORM extends ApiQueryBase {
 	protected function getParams() {
 		return array_filter(
 			$this->extractRequestParams(),
-			function( $prop ) {
+			function ( $prop ) {
 				return isset( $prop );
 			}
 		);
@@ -205,7 +205,7 @@ abstract class ApiQueryORM extends ApiQueryBase {
 	 * @param array $serializedResults
 	 */
 	protected function setIndexedTagNames( array &$serializedResults ) {
-		$this->getResult()->setIndexedTagName( $serializedResults, $this->getRowName() );
+		ApiResult::setIndexedTagName( $serializedResults, $this->getRowName() );
 	}
 
 	/**
@@ -228,20 +228,24 @@ abstract class ApiQueryORM extends ApiQueryBase {
 	 * @return array
 	 */
 	public function getAllowedParams() {
-		$params = array (
+		$params = array(
 			'props' => array(
 				ApiBase::PARAM_TYPE => $this->getTable()->getFieldNames(),
 				ApiBase::PARAM_ISMULTI => true,
 				ApiBase::PARAM_REQUIRED => true,
+				ApiBase::PARAM_HELP_MSG => 'api-orm-param-props',
 			),
 			'limit' => array(
 				ApiBase::PARAM_DFLT => 20,
 				ApiBase::PARAM_TYPE => 'limit',
 				ApiBase::PARAM_MIN => 1,
 				ApiBase::PARAM_MAX => ApiBase::LIMIT_BIG1,
-				ApiBase::PARAM_MAX2 => ApiBase::LIMIT_BIG2
+				ApiBase::PARAM_MAX2 => ApiBase::LIMIT_BIG2,
+				ApiBase::PARAM_HELP_MSG => 'api-orm-param-limit',
 			),
-			'continue' => null,
+			'continue' => array(
+				ApiBase::PARAM_HELP_MSG => 'api-help-param-continue',
+			),
 		);
 
 		return array_merge( $this->getTable()->getAPIParams(), $params );
@@ -249,10 +253,11 @@ abstract class ApiQueryORM extends ApiQueryBase {
 
 	/**
 	 * @see ApiBase::getParamDescription()
+	 * @deprecated since 1.25
 	 * @return array
 	 */
 	public function getParamDescription() {
-		$descriptions = array (
+		$descriptions = array(
 			'props' => 'Fields to query',
 			'continue' => 'Offset number from where to continue the query',
 			'limit' => 'Max amount of rows to return',
@@ -260,5 +265,4 @@ abstract class ApiQueryORM extends ApiQueryBase {
 
 		return array_merge( $this->getTable()->getFieldDescriptions(), $descriptions );
 	}
-
 }

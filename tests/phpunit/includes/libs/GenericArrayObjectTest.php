@@ -24,13 +24,13 @@
  * @ingroup Test
  * @group GenericArrayObject
  *
- * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
-abstract class GenericArrayObjectTest extends MediaWikiTestCase {
+abstract class GenericArrayObjectTest extends PHPUnit_Framework_TestCase {
 
 	/**
-	 * Returns objects that can serve as elements in the concrete GenericArrayObject deriving class being tested.
+	 * Returns objects that can serve as elements in the concrete
+	 * GenericArrayObject deriving class being tested.
 	 *
 	 * @since 1.20
 	 *
@@ -73,6 +73,7 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 */
 	protected function getNew( array $elements = array() ) {
 		$class = $this->getInstanceClass();
+
 		return new $class( $elements );
 	}
 
@@ -82,6 +83,8 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 * @since 1.20
 	 *
 	 * @param array $elements
+	 *
+	 * @covers GenericArrayObject::__construct
 	 */
 	public function testConstructor( array $elements ) {
 		$arrayObject = $this->getNew( $elements );
@@ -95,6 +98,8 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 * @since 1.20
 	 *
 	 * @param array $elements
+	 *
+	 * @covers GenericArrayObject::isEmpty
 	 */
 	public function testIsEmpty( array $elements ) {
 		$arrayObject = $this->getNew( $elements );
@@ -108,6 +113,8 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 * @since 1.20
 	 *
 	 * @param GenericArrayObject $list
+	 *
+	 * @covers GenericArrayObject::offsetUnset
 	 */
 	public function testUnset( GenericArrayObject $list ) {
 		if ( $list->isEmpty() ) {
@@ -133,6 +140,8 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 * @since 1.20
 	 *
 	 * @param array $elements
+	 *
+	 * @covers GenericArrayObject::append
 	 */
 	public function testAppend( array $elements ) {
 		$list = $this->getNew();
@@ -161,7 +170,9 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	/**
 	 * @since 1.20
 	 *
-	 * @param callback $function
+	 * @param callable $function
+	 *
+	 * @covers GenericArrayObject::getObjectType
 	 */
 	protected function checkTypeChecks( $function ) {
 		$excption = null;
@@ -193,10 +204,13 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 * @since 1.20
 	 *
 	 * @param array $elements
+	 *
+	 * @covers GenericArrayObject::offsetSet
 	 */
 	public function testOffsetSet( array $elements ) {
 		if ( $elements === array() ) {
 			$this->assertTrue( true );
+
 			return;
 		}
 
@@ -245,6 +259,10 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 	 * @since 1.21
 	 *
 	 * @param GenericArrayObject $list
+	 *
+	 * @covers GenericArrayObject::getSerializationData
+	 * @covers GenericArrayObject::serialize
+	 * @covers GenericArrayObject::unserialize
 	 */
 	public function testSerialization( GenericArrayObject $list ) {
 		$serialization = serialize( $list );
@@ -258,5 +276,4 @@ abstract class GenericArrayObjectTest extends MediaWikiTestCase {
 
 		$this->assertArrayEquals( $list, $copy, true, true );
 	}
-
 }

@@ -29,7 +29,7 @@
  * @ingroup Maintenance
  */
 
-require_once( __DIR__ . '/Maintenance.php' );
+require_once __DIR__ . '/Maintenance.php';
 
 /**
  * Maintenance script to rebuild the localisation cache.
@@ -44,13 +44,8 @@ class RebuildLocalisationCache extends Maintenance {
 		$this->addOption( 'threads', 'Fork more than one thread', false, true );
 		$this->addOption( 'outdir', 'Override the output directory (normally $wgCacheDirectory)',
 			false, true );
-	}
-
-	public function memoryLimit() {
-		if ( $this->hasOption( 'memory-limit' ) ) {
-			return parent::memoryLimit();
-		}
-		return '1000M';
+		$this->addOption( 'lang', 'Only rebuild these languages, comma separated.',
+			false, true );
 	}
 
 	public function finalSetup() {
@@ -59,7 +54,7 @@ class RebuildLocalisationCache extends Maintenance {
 		# no l10n cache. Break the cycle by forcing $wgLanguageCode = 'en'.
 		global $wgLanguageCode;
 		$wgLanguageCode = 'en';
-		return parent::finalSetup();
+		parent::finalSetup();
 	}
 
 	public function execute() {
@@ -88,9 +83,21 @@ class RebuildLocalisationCache extends Maintenance {
 		if ( $this->hasOption( 'outdir' ) ) {
 			$conf['storeDirectory'] = $this->getOption( 'outdir' );
 		}
-		$lc = new LocalisationCache_BulkLoad( $conf );
+		$lc = new LocalisationCacheBulkLoad( $conf );
 
-		$codes = array_keys( Language::fetchLanguageNames( null, 'mwfile' ) );
+		$allCodes = array_keys( Language::fetchLanguageNames( null, 'mwfile' ) );
+		if ( $this->hasOption( 'lang' ) ) {
+			# Validate requested languages
+			$codes = array_intersect( $allCodes,
+				explode( ',', $this->getOption( 'lang' ) ) );
+			# Bailed out if nothing is left
+			if ( count( $codes ) == 0 ) {
+				$this->error( 'None of the languages specified exists.', 1 );
+			}
+		} else {
+			# By default get all languages
+			$codes = $allCodes;
+		}
 		sort( $codes );
 
 		// Initialise and split into chunks
@@ -98,6 +105,7 @@ class RebuildLocalisationCache extends Maintenance {
 		$total = count( $codes );
 		$chunks = array_chunk( $codes, ceil( count( $codes ) / $threads ) );
 		$pids = array();
+		$parentStatus = 0;
 		foreach ( $chunks as $codes ) {
 			// Do not fork for only one thread
 			$pid = ( $threads > 1 ) ? pcntl_fork() : -1;
@@ -106,9 +114,8 @@ class RebuildLocalisationCache extends Maintenance {
 				// Child, reseed because there is no bug in PHP:
 				// http://bugs.php.net/bug.php?id=42465
 				mt_srand( getmypid() );
-				$numRebuilt = $this->doRebuild( $codes, $lc, $force );
-				// Abuse the exit value for the count of rebuild languages
-				exit( $numRebuilt );
+				$this->doRebuild( $codes, $lc, $force );
+				exit( 0 );
 			} elseif ( $pid === -1 ) {
 				// Fork failed or one thread, do it serialized
 				$numRebuilt += $this->doRebuild( $codes, $lc, $force );
@@ -121,22 +128,29 @@ class RebuildLocalisationCache extends Maintenance {
 		foreach ( $pids as $pid ) {
 			$status = 0;
 			pcntl_waitpid( $pid, $status );
-			// Fetch the count from the return value
-			$numRebuilt += pcntl_wexitstatus( $status );
+			if ( pcntl_wexitstatus( $status ) ) {
+				// Pass a fatal error code through to the caller
+				$parentStatus = pcntl_wexitstatus( $status );
+			}
 		}
 
-		$this->output( "$numRebuilt languages rebuilt out of $total\n" );
-		if ( $numRebuilt === 0 ) {
-			$this->output( "Use --force to rebuild the caches which are still fresh.\n" );
+		if ( !$pids ) {
+			$this->output( "$numRebuilt languages rebuilt out of $total\n" );
+			if ( $numRebuilt === 0 ) {
+				$this->output( "Use --force to rebuild the caches which are still fresh.\n" );
+			}
+		}
+		if ( $parentStatus ) {
+			exit( $parentStatus );
 		}
 	}
 
 	/**
 	 * Helper function to rebuild list of languages codes. Prints the code
 	 * for each language which is rebuilt.
-	 * @param $codes array List of language codes to rebuild.
-	 * @param $lc LocalisationCache Instance of LocalisationCache_BulkLoad (?)
-	 * @param $force bool Rebuild up-to-date languages
+	 * @param array $codes List of language codes to rebuild.
+	 * @param LocalisationCache $lc Instance of LocalisationCacheBulkLoad (?)
+	 * @param bool $force Rebuild up-to-date languages
 	 * @return int Number of rebuilt languages
 	 */
 	private function doRebuild( $codes, $lc, $force ) {
@@ -148,6 +162,7 @@ class RebuildLocalisationCache extends Maintenance {
 				$numRebuilt++;
 			}
 		}
+
 		return $numRebuilt;
 	}
 
@@ -162,4 +177,4 @@ class RebuildLocalisationCache extends Maintenance {
 }
 
 $maintClass = "RebuildLocalisationCache";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

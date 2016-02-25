@@ -32,7 +32,7 @@ class AncientPagesPage extends QueryPage {
 		parent::__construct( $name );
 	}
 
-	function isExpensive() {
+	public function isExpensive() {
 		return true;
 	}
 
@@ -40,19 +40,23 @@ class AncientPagesPage extends QueryPage {
 		return false;
 	}
 
-	function getQueryInfo() {
+	public function getQueryInfo() {
 		return array(
 			'tables' => array( 'page', 'revision' ),
-			'fields' => array( 'namespace' => 'page_namespace',
-					'title' => 'page_title',
-					'value' => 'rev_timestamp' ),
-			'conds' => array( 'page_namespace' => MWNamespace::getContentNamespaces(),
-					'page_is_redirect' => 0,
-					'page_latest=rev_id' )
+			'fields' => array(
+				'namespace' => 'page_namespace',
+				'title' => 'page_title',
+				'value' => 'rev_timestamp'
+			),
+			'conds' => array(
+				'page_namespace' => MWNamespace::getContentNamespaces(),
+				'page_is_redirect' => 0,
+				'page_latest=rev_id'
+			)
 		);
 	}
 
-	function usesTimestamps() {
+	public function usesTimestamps() {
 		return true;
 	}
 
@@ -60,6 +64,11 @@ class AncientPagesPage extends QueryPage {
 		return false;
 	}
 
+	/**
+	 * @param Skin $skin
+	 * @param object $result Result row
+	 * @return string
+	 */
 	function formatResult( $skin, $result ) {
 		global $wgContLang;
 
@@ -69,6 +78,7 @@ class AncientPagesPage extends QueryPage {
 			$title,
 			htmlspecialchars( $wgContLang->convert( $title->getPrefixedText() ) )
 		);
+
 		return $this->getLanguage()->specialList( $link, htmlspecialchars( $d ) );
 	}
 

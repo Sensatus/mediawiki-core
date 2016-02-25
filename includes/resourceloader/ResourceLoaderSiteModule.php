@@ -27,41 +27,24 @@
  */
 class ResourceLoaderSiteModule extends ResourceLoaderWikiModule {
 
-	/* Protected Methods */
-
 	/**
-	 * Gets list of pages used by this module
+	 * Get list of pages used by this module
 	 *
-	 * @param $context ResourceLoaderContext
-	 *
-	 * @return Array: List of pages
+	 * @param ResourceLoaderContext $context
+	 * @return array List of pages
 	 */
 	protected function getPages( ResourceLoaderContext $context ) {
-		global $wgHandheldStyle;
+		$pages = array();
+		if ( $this->getConfig()->get( 'UseSiteJs' ) ) {
+			$pages['MediaWiki:Common.js'] = array( 'type' => 'script' );
+			$pages['MediaWiki:' . ucfirst( $context->getSkin() ) . '.js'] = array( 'type' => 'script' );
+		}
+		if ( $this->getConfig()->get( 'UseSiteCss' ) ) {
+			$pages['MediaWiki:Common.css'] = array( 'type' => 'style' );
+			$pages['MediaWiki:' . ucfirst( $context->getSkin() ) . '.css'] = array( 'type' => 'style' );
+			$pages['MediaWiki:Print.css'] = array( 'type' => 'style', 'media' => 'print' );
 
-		$pages = array(
-			'MediaWiki:Common.js' => array( 'type' => 'script' ),
-			'MediaWiki:Common.css' => array( 'type' => 'style' ),
-			'MediaWiki:' . ucfirst( $context->getSkin() ) . '.js' => array( 'type' => 'script' ),
-			'MediaWiki:' . ucfirst( $context->getSkin() ) . '.css' => array( 'type' => 'style' ),
-			'MediaWiki:Print.css' => array( 'type' => 'style', 'media' => 'print' ),
-		);
-		if ( $wgHandheldStyle ) {
-			$pages['MediaWiki:Handheld.css'] = array(
-				'type' => 'style',
-				'media' => 'handheld' );
 		}
 		return $pages;
-	}
-
-	/* Methods */
-
-	/**
-	 * Gets group name
-	 *
-	 * @return String: Name of group
-	 */
-	public function getGroup() {
-		return 'site';
 	}
 }

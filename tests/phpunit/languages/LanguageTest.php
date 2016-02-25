@@ -1,8 +1,11 @@
 <?php
 
 class LanguageTest extends LanguageClassesTestCase {
-
-	function testLanguageConvertDoubleWidthToSingleWidth() {
+	/**
+	 * @covers Language::convertDoubleWidth
+	 * @covers Language::normalizeForSearch
+	 */
+	public function testLanguageConvertDoubleWidthToSingleWidth() {
 		$this->assertEquals(
 			"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 			$this->getLang()->normalizeForSearch(
@@ -14,12 +17,13 @@ class LanguageTest extends LanguageClassesTestCase {
 
 	/**
 	 * @dataProvider provideFormattableTimes
+	 * @covers Language::formatTimePeriod
 	 */
-	function testFormatTimePeriod( $seconds, $format, $expected, $desc ) {
+	public function testFormatTimePeriod( $seconds, $format, $expected, $desc ) {
 		$this->assertEquals( $expected, $this->getLang()->formatTimePeriod( $seconds, $format ), $desc );
 	}
 
-	function provideFormattableTimes() {
+	public static function provideFormattableTimes() {
 		return array(
 			array(
 				9.45,
@@ -202,10 +206,12 @@ class LanguageTest extends LanguageClassesTestCase {
 				'formatTimePeriod() rounding, recursion, (>48h)'
 			),
 		);
-
 	}
 
-	function testTruncate() {
+	/**
+	 * @covers Language::truncate
+	 */
+	public function testTruncate() {
 		$this->assertEquals(
 			"XXX",
 			$this->getLang()->truncate( "1234567890", 0, 'XXX' ),
@@ -235,12 +241,33 @@ class LanguageTest extends LanguageClassesTestCase {
 			$this->getLang()->truncate( "123456789", -5, 'XXXXXXXXXXXXXXX' ),
 			'truncate suffix, large ellipsis'
 		);
+		$this->assertEquals(
+			"123XXX",
+			$this->getLang()->truncate( "123                ", 9, 'XXX' ),
+			'truncate prefix, with spaces'
+		);
+		$this->assertEquals(
+			"12345XXX",
+			$this->getLang()->truncate( "12345            8", 11, 'XXX' ),
+			'truncate prefix, with spaces and non-space ending'
+		);
+		$this->assertEquals(
+			"XXX234",
+			$this->getLang()->truncate( "1              234", -8, 'XXX' ),
+			'truncate suffix, with spaces'
+		);
+		$this->assertEquals(
+			"12345XXX",
+			$this->getLang()->truncate( "1234567890", 5, 'XXX', false ),
+			'truncate without adjustment'
+		);
 	}
 
 	/**
-	 * @dataProvider provideHTMLTruncateData()
+	 * @dataProvider provideHTMLTruncateData
+	 * @covers Language::truncateHTML
 	 */
-	function testTruncateHtml( $len, $ellipsis, $input, $expected ) {
+	public function testTruncateHtml( $len, $ellipsis, $input, $expected ) {
 		// Actual HTML...
 		$this->assertEquals(
 			$expected,
@@ -249,9 +276,9 @@ class LanguageTest extends LanguageClassesTestCase {
 	}
 
 	/**
-	 * Array format is ($len, $ellipsis, $input, $expected)
+	 * @return array Format is ($len, $ellipsis, $input, $expected)
 	 */
-	function provideHTMLTruncateData() {
+	public static function provideHTMLTruncateData() {
 		return array(
 			array( 0, 'XXX', "1234567890", "XXX" ),
 			array( 8, 'XXX', "1234567890", "12345XXX" ),
@@ -310,8 +337,9 @@ class LanguageTest extends LanguageClassesTestCase {
 	/**
 	 * Test Language::isWellFormedLanguageTag()
 	 * @dataProvider provideWellFormedLanguageTags
+	 * @covers Language::isWellFormedLanguageTag
 	 */
-	function testWellFormedLanguageTag( $code, $message = '' ) {
+	public function testWellFormedLanguageTag( $code, $message = '' ) {
 		$this->assertTrue(
 			Language::isWellFormedLanguageTag( $code ),
 			"validating code $code $message"
@@ -324,7 +352,7 @@ class LanguageTest extends LanguageClassesTestCase {
 	 * and distributed as free software, under the GNU General Public Licence.
 	 * http://www.bortzmeyer.org/gabuzomeu-parsing-language-tags.html
 	 */
-	function provideWellFormedLanguageTags() {
+	public static function provideWellFormedLanguageTags() {
 		return array(
 			array( 'fr', 'two-letter code' ),
 			array( 'fr-latn', 'two-letter code with lower case script code' ),
@@ -361,8 +389,9 @@ class LanguageTest extends LanguageClassesTestCase {
 	/**
 	 * Negative test for Language::isWellFormedLanguageTag()
 	 * @dataProvider provideMalformedLanguageTags
+	 * @covers Language::isWellFormedLanguageTag
 	 */
-	function testMalformedLanguageTag( $code, $message = '' ) {
+	public function testMalformedLanguageTag( $code, $message = '' ) {
 		$this->assertFalse(
 			Language::isWellFormedLanguageTag( $code ),
 			"validating that code $code is a malformed language tag - $message"
@@ -375,7 +404,7 @@ class LanguageTest extends LanguageClassesTestCase {
 	 * and distributed as free software, under the GNU General Public Licence.
 	 * http://www.bortzmeyer.org/gabuzomeu-parsing-language-tags.html
 	 */
-	function provideMalformedLanguageTags() {
+	public static function provideMalformedLanguageTags() {
 		return array(
 			array( 'f', 'language too short' ),
 			array( 'f-Latn', 'language too short with script' ),
@@ -383,7 +412,10 @@ class LanguageTest extends LanguageClassesTestCase {
 			array( 'fr-Latn-F', 'region too short' ),
 			array( 'a-value', 'language too short with region' ),
 			array( 'tlh-a-b-foo', 'valid three-letter with wrong variant' ),
-			array( 'i-notexist', 'grandfathered but not registered: invalid, even if we only test well-formedness' ),
+			array(
+				'i-notexist',
+				'grandfathered but not registered: invalid, even if we only test well-formedness'
+			),
 			array( 'abcdefghi-012345678', 'numbers too long' ),
 			array( 'ab-abc-abc-abc-abc', 'invalid extensions' ),
 			array( 'ab-abcd-abc', 'invalid extensions' ),
@@ -411,8 +443,9 @@ class LanguageTest extends LanguageClassesTestCase {
 
 	/**
 	 * Negative test for Language::isWellFormedLanguageTag()
+	 * @covers Language::isWellFormedLanguageTag
 	 */
-	function testLenientLanguageTag() {
+	public function testLenientLanguageTag() {
 		$this->assertTrue(
 			Language::isWellFormedLanguageTag( 'pa_guru', true ),
 			'pa_guru is a well-formed language tag in lenient mode'
@@ -422,45 +455,40 @@ class LanguageTest extends LanguageClassesTestCase {
 	/**
 	 * Test Language::isValidBuiltInCode()
 	 * @dataProvider provideLanguageCodes
+	 * @covers Language::isValidBuiltInCode
 	 */
-	function testBuiltInCodeValidation( $code, $message = '' ) {
-		$this->assertTrue(
+	public function testBuiltInCodeValidation( $code, $expected, $message = '' ) {
+		$this->assertEquals( $expected,
 			(bool)Language::isValidBuiltInCode( $code ),
 			"validating code $code $message"
 		);
 	}
 
-	function testBuiltInCodeValidationRejectUnderscore() {
-		$this->assertFalse(
-			(bool)Language::isValidBuiltInCode( 'be_tarask' ),
-			"reject underscore in language code"
-		);
-	}
-
-	function provideLanguageCodes() {
+	public static function provideLanguageCodes() {
 		return array(
-			array( 'fr', 'Two letters, minor case' ),
-			array( 'EN', 'Two letters, upper case' ),
-			array( 'tyv', 'Three letters' ),
-			array( 'tokipona', 'long language code' ),
-			array( 'be-tarask', 'With dash' ),
-			array( 'Zh-classical', 'Begin with upper case, dash' ),
-			array( 'Be-x-old', 'With extension (two dashes)' ),
+			array( 'fr', true, 'Two letters, minor case' ),
+			array( 'EN', false, 'Two letters, upper case' ),
+			array( 'tyv', true, 'Three letters' ),
+			array( 'tokipona', true, 'long language code' ),
+			array( 'be-tarask', true, 'With dash' ),
+			array( 'be-x-old', true, 'With extension (two dashes)' ),
+			array( 'be_tarask', false, 'Reject underscores' ),
 		);
 	}
 
 	/**
 	 * Test Language::isKnownLanguageTag()
 	 * @dataProvider provideKnownLanguageTags
+	 * @covers Language::isKnownLanguageTag
 	 */
-	function testKnownLanguageTag( $code, $message = '' ) {
+	public function testKnownLanguageTag( $code, $message = '' ) {
 		$this->assertTrue(
 			(bool)Language::isKnownLanguageTag( $code ),
 			"validating code $code - $message"
 		);
 	}
 
-	function provideKnownLanguageTags() {
+	public static function provideKnownLanguageTags() {
 		return array(
 			array( 'fr', 'simple code' ),
 			array( 'bat-smg', 'an MW legacy tag' ),
@@ -469,52 +497,104 @@ class LanguageTest extends LanguageClassesTestCase {
 	}
 
 	/**
-	 * Test Language::isKnownLanguageTag()
+	 * @covers Language::isKnownLanguageTag
 	 */
-	function testKnownCldrLanguageTag() {
+	public function testKnownCldrLanguageTag() {
 		if ( !class_exists( 'LanguageNames' ) ) {
-			$this->markTestSkipped( 'The LanguageNames class is not available. The cldr extension is probably not installed.' );
+			$this->markTestSkipped( 'The LanguageNames class is not available. '
+				. 'The CLDR extension is probably not installed.' );
 		}
 
 		$this->assertTrue(
 			(bool)Language::isKnownLanguageTag( 'pal' ),
-			'validating code "pal" an ancient language, which probably will not appear in Names.php, but appears in CLDR in English'
+			'validating code "pal" an ancient language, which probably will '
+				. 'not appear in Names.php, but appears in CLDR in English'
 		);
 	}
 
 	/**
 	 * Negative tests for Language::isKnownLanguageTag()
 	 * @dataProvider provideUnKnownLanguageTags
+	 * @covers Language::isKnownLanguageTag
 	 */
-	function testUnknownLanguageTag( $code, $message = '' ) {
+	public function testUnknownLanguageTag( $code, $message = '' ) {
 		$this->assertFalse(
 			(bool)Language::isKnownLanguageTag( $code ),
 			"checking that code $code is invalid - $message"
 		);
 	}
 
-	function provideUnknownLanguageTags() {
+	public static function provideUnknownLanguageTags() {
 		return array(
 			array( 'mw', 'non-existent two-letter code' ),
+			array( 'foo"<bar', 'very invalid language code' ),
 		);
 	}
 
 	/**
-	 * @dataProvider provideSprintfDateSamples
+	 * Test too short timestamp
+	 * @expectedException MWException
+	 * @covers Language::sprintfDate
 	 */
-	function testSprintfDate( $format, $ts, $expected, $msg ) {
+	public function testSprintfDateTooShortTimestamp() {
+		$this->getLang()->sprintfDate( 'xiY', '1234567890123' );
+	}
+
+	/**
+	 * Test too long timestamp
+	 * @expectedException MWException
+	 * @covers Language::sprintfDate
+	 */
+	public function testSprintfDateTooLongTimestamp() {
+		$this->getLang()->sprintfDate( 'xiY', '123456789012345' );
+	}
+
+	/**
+	 * Test too short timestamp
+	 * @expectedException MWException
+	 * @covers Language::sprintfDate
+	 */
+	public function testSprintfDateNotAllDigitTimestamp() {
+		$this->getLang()->sprintfDate( 'xiY', '-1234567890123' );
+	}
+
+	/**
+	 * @dataProvider provideSprintfDateSamples
+	 * @covers Language::sprintfDate
+	 */
+	public function testSprintfDate( $format, $ts, $expected, $msg ) {
+		$ttl = null;
 		$this->assertEquals(
 			$expected,
-			$this->getLang()->sprintfDate( $format, $ts ),
+			$this->getLang()->sprintfDate( $format, $ts, null, $ttl ),
 			"sprintfDate('$format', '$ts'): $msg"
 		);
+		if ( $ttl ) {
+			$dt = new DateTime( $ts );
+			$lastValidTS = $dt->add( new DateInterval( 'PT' . ( $ttl - 1 ) . 'S' ) )->format( 'YmdHis' );
+			$this->assertEquals(
+				$expected,
+				$this->getLang()->sprintfDate( $format, $lastValidTS, null ),
+				"sprintfDate('$format', '$ts'): TTL $ttl too high (output was different at $lastValidTS)"
+			);
+		} else {
+			// advance the time enough to make all of the possible outputs different (except possibly L)
+			$dt = new DateTime( $ts );
+			$newTS = $dt->add( new DateInterval( 'P1Y1M8DT13H1M1S' ) )->format( 'YmdHis' );
+			$this->assertEquals(
+				$expected,
+				$this->getLang()->sprintfDate( $format, $newTS, null ),
+				"sprintfDate('$format', '$ts'): Missing TTL (output was different at $newTS)"
+			);
+		}
 	}
 
 	/**
-	 * bug 33454. sprintfDate should always use UTC.
+	 * sprintfDate should always use UTC when no zone is given.
 	 * @dataProvider provideSprintfDateSamples
+	 * @covers Language::sprintfDate
 	 */
-	function testSprintfDateTZ( $format, $ts, $expected, $msg ) {
+	public function testSprintfDateNoZone( $format, $ts, $expected, $ignore, $msg ) {
 		$oldTZ = date_default_timezone_get();
 		$res = date_default_timezone_set( 'Asia/Seoul' );
 		if ( !$res ) {
@@ -530,17 +610,37 @@ class LanguageTest extends LanguageClassesTestCase {
 		date_default_timezone_set( $oldTZ );
 	}
 
-	function provideSprintfDateSamples() {
+	/**
+	 * sprintfDate should use passed timezone
+	 * @dataProvider provideSprintfDateSamples
+	 * @covers Language::sprintfDate
+	 */
+	public function testSprintfDateTZ( $format, $ts, $ignore, $expected, $msg ) {
+		$tz = new DateTimeZone( 'Asia/Seoul' );
+		if ( !$tz ) {
+			$this->markTestSkipped( "Error getting Timezone" );
+		}
+
+		$this->assertEquals(
+			$expected,
+			$this->getLang()->sprintfDate( $format, $ts, $tz ),
+			"sprintfDate('$format', '$ts', 'Asia/Seoul'): $msg"
+		);
+	}
+
+	public static function provideSprintfDateSamples() {
 		return array(
 			array(
 				'xiY',
 				'20111212000000',
 				'1390', // note because we're testing English locale we get Latin-standard digits
+				'1390',
 				'Iranian calendar full year'
 			),
 			array(
 				'xiy',
 				'20111212000000',
+				'90',
 				'90',
 				'Iranian calendar short year'
 			),
@@ -548,11 +648,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'o',
 				'20120101235000',
 				'2011',
+				'2011',
 				'ISO 8601 (week) year'
 			),
 			array(
 				'W',
 				'20120101235000',
+				'52',
 				'52',
 				'Week number'
 			),
@@ -560,18 +662,22 @@ class LanguageTest extends LanguageClassesTestCase {
 				'W',
 				'20120102235000',
 				'1',
+				'1',
 				'Week number'
 			),
 			array(
 				'o-\\WW-N',
 				'20091231235000',
 				'2009-W53-4',
+				'2009-W53-4',
 				'leap week'
 			),
-			// What follows is mostly copied from http://www.mediawiki.org/wiki/Help:Extension:ParserFunctions#.23time
+			// What follows is mostly copied from
+			// https://www.mediawiki.org/wiki/Help:Extension:ParserFunctions#.23time
 			array(
 				'Y',
 				'20120102090705',
+				'2012',
 				'2012',
 				'Full year'
 			),
@@ -579,11 +685,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'y',
 				'20120102090705',
 				'12',
+				'12',
 				'2 digit year'
 			),
 			array(
 				'L',
 				'20120102090705',
+				'1',
 				'1',
 				'Leap year'
 			),
@@ -591,11 +699,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'n',
 				'20120102090705',
 				'1',
+				'1',
 				'Month index, not zero pad'
 			),
 			array(
 				'N',
 				'20120102090705',
+				'01',
 				'01',
 				'Month index. Zero pad'
 			),
@@ -603,11 +713,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'M',
 				'20120102090705',
 				'Jan',
+				'Jan',
 				'Month abbrev'
 			),
 			array(
 				'F',
 				'20120102090705',
+				'January',
 				'January',
 				'Full month'
 			),
@@ -615,11 +727,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'xg',
 				'20120102090705',
 				'January',
+				'January',
 				'Genitive month name (same in EN)'
 			),
 			array(
 				'j',
 				'20120102090705',
+				'2',
 				'2',
 				'Day of month (not zero pad)'
 			),
@@ -627,11 +741,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'd',
 				'20120102090705',
 				'02',
+				'02',
 				'Day of month (zero-pad)'
 			),
 			array(
 				'z',
 				'20120102090705',
+				'1',
 				'1',
 				'Day of year (zero-indexed)'
 			),
@@ -639,11 +755,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'D',
 				'20120102090705',
 				'Mon',
+				'Mon',
 				'Day of week (abbrev)'
 			),
 			array(
 				'l',
 				'20120102090705',
+				'Monday',
 				'Monday',
 				'Full day of week'
 			),
@@ -651,11 +769,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'N',
 				'20120101090705',
 				'7',
+				'7',
 				'Day of week (Mon=1, Sun=7)'
 			),
 			array(
 				'w',
 				'20120101090705',
+				'0',
 				'0',
 				'Day of week (Sun=0, Sat=6)'
 			),
@@ -663,11 +783,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'N',
 				'20120102090705',
 				'1',
+				'1',
 				'Day of week'
 			),
 			array(
 				'a',
 				'20120102090705',
+				'am',
 				'am',
 				'am vs pm'
 			),
@@ -675,11 +797,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'A',
 				'20120102120000',
 				'PM',
+				'PM',
 				'AM vs PM'
 			),
 			array(
 				'a',
 				'20120102000000',
+				'am',
 				'am',
 				'AM vs PM'
 			),
@@ -687,11 +811,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'g',
 				'20120102090705',
 				'9',
+				'9',
 				'12 hour, not Zero'
 			),
 			array(
 				'h',
 				'20120102090705',
+				'09',
 				'09',
 				'12 hour, zero padded'
 			),
@@ -699,11 +825,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'G',
 				'20120102090705',
 				'9',
+				'9',
 				'24 hour, not zero'
 			),
 			array(
 				'H',
 				'20120102090705',
+				'09',
 				'09',
 				'24 hour, zero'
 			),
@@ -711,11 +839,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'H',
 				'20120102110705',
 				'11',
+				'11',
 				'24 hour, zero'
 			),
 			array(
 				'i',
 				'20120102090705',
+				'07',
 				'07',
 				'Minutes'
 			),
@@ -723,17 +853,20 @@ class LanguageTest extends LanguageClassesTestCase {
 				's',
 				'20120102090705',
 				'05',
+				'05',
 				'seconds'
 			),
 			array(
 				'U',
 				'20120102090705',
 				'1325495225',
+				'1325462825',
 				'unix time'
 			),
 			array(
 				't',
 				'20120102090705',
+				'31',
 				'31',
 				'Days in current month'
 			),
@@ -741,17 +874,62 @@ class LanguageTest extends LanguageClassesTestCase {
 				'c',
 				'20120102090705',
 				'2012-01-02T09:07:05+00:00',
+				'2012-01-02T09:07:05+09:00',
 				'ISO 8601 timestamp'
 			),
 			array(
 				'r',
 				'20120102090705',
 				'Mon, 02 Jan 2012 09:07:05 +0000',
+				'Mon, 02 Jan 2012 09:07:05 +0900',
 				'RFC 5322'
+			),
+			array(
+				'e',
+				'20120102090705',
+				'UTC',
+				'Asia/Seoul',
+				'Timezone identifier'
+			),
+			array(
+				'I',
+				'19880602090705',
+				'0',
+				'1',
+				'DST indicator'
+			),
+			array(
+				'O',
+				'20120102090705',
+				'+0000',
+				'+0900',
+				'Timezone offset'
+			),
+			array(
+				'P',
+				'20120102090705',
+				'+00:00',
+				'+09:00',
+				'Timezone offset with colon'
+			),
+			array(
+				'T',
+				'20120102090705',
+				'UTC',
+				'KST',
+				'Timezone abbreviation'
+			),
+			array(
+				'Z',
+				'20120102090705',
+				'0',
+				'32400',
+				'Timezone offset in seconds'
 			),
 			array(
 				'xmj xmF xmn xmY',
 				'20120102090705',
+				'7 Safar 2 1433',
 				'7 Safar 2 1433',
 				'Islamic'
 			),
@@ -759,11 +937,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'xij xiF xin xiY',
 				'20120102090705',
 				'12 Dey 10 1390',
+				'12 Dey 10 1390',
 				'Iranian'
 			),
 			array(
 				'xjj xjF xjn xjY',
 				'20120102090705',
+				'7 Tevet 4 5772',
 				'7 Tevet 4 5772',
 				'Hebrew'
 			),
@@ -771,11 +951,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'xjt',
 				'20120102090705',
 				'29',
+				'29',
 				'Hebrew number of days in month'
 			),
 			array(
 				'xjx',
 				'20120102090705',
+				'Tevet',
 				'Tevet',
 				'Hebrew genitive month name (No difference in EN)'
 			),
@@ -783,11 +965,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'xkY',
 				'20120102090705',
 				'2555',
+				'2555',
 				'Thai year'
 			),
 			array(
 				'xoY',
 				'20120102090705',
+				'101',
 				'101',
 				'Minguo'
 			),
@@ -795,11 +979,13 @@ class LanguageTest extends LanguageClassesTestCase {
 				'xtY',
 				'20120102090705',
 				'平成24',
+				'平成24',
 				'nengo'
 			),
 			array(
 				'xrxkYY',
 				'20120102090705',
+				'MMDLV2012',
 				'MMDLV2012',
 				'Roman numerals'
 			),
@@ -807,17 +993,20 @@ class LanguageTest extends LanguageClassesTestCase {
 				'xhxjYY',
 				'20120102090705',
 				'ה\'תשע"ב2012',
+				'ה\'תשע"ב2012',
 				'Hebrew numberals'
 			),
 			array(
 				'xnY',
 				'20120102090705',
 				'2012',
+				'2012',
 				'Raw numerals (doesn\'t mean much in EN)'
 			),
 			array(
 				'[[Y "(yea"\\r)]] \\"xx\\"',
 				'20120102090705',
+				'[[2012 (year)]] "x"',
 				'[[2012 (year)]] "x"',
 				'Various escaping'
 			),
@@ -827,8 +1016,9 @@ class LanguageTest extends LanguageClassesTestCase {
 
 	/**
 	 * @dataProvider provideFormatSizes
+	 * @covers Language::formatSize
 	 */
-	function testFormatSize( $size, $expected, $msg ) {
+	public function testFormatSize( $size, $expected, $msg ) {
 		$this->assertEquals(
 			$expected,
 			$this->getLang()->formatSize( $size ),
@@ -836,11 +1026,11 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-	function provideFormatSizes() {
+	public static function provideFormatSizes() {
 		return array(
 			array(
 				0,
-				"0 B",
+				"0 bytes",
 				"Zero bytes"
 			),
 			array(
@@ -856,7 +1046,7 @@ class LanguageTest extends LanguageClassesTestCase {
 			array(
 				1024 * 1024 * 1024,
 				"1 GB",
-				"1 gigabytes"
+				"1 gigabyte"
 			),
 			array(
 				pow( 1024, 4 ),
@@ -889,8 +1079,9 @@ class LanguageTest extends LanguageClassesTestCase {
 
 	/**
 	 * @dataProvider provideFormatBitrate
+	 * @covers Language::formatBitrate
 	 */
-	function testFormatBitrate( $bps, $expected, $msg ) {
+	public function testFormatBitrate( $bps, $expected, $msg ) {
 		$this->assertEquals(
 			$expected,
 			$this->getLang()->formatBitrate( $bps ),
@@ -898,7 +1089,7 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-	function provideFormatBitrate() {
+	public static function provideFormatBitrate() {
 		return array(
 			array(
 				0,
@@ -958,11 +1149,11 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-
 	/**
 	 * @dataProvider provideFormatDuration
+	 * @covers Language::formatDuration
 	 */
-	function testFormatDuration( $duration, $expected, $intervals = array() ) {
+	public function testFormatDuration( $duration, $expected, $intervals = array() ) {
 		$this->assertEquals(
 			$expected,
 			$this->getLang()->formatDuration( $duration, $intervals ),
@@ -970,7 +1161,7 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-	function provideFormatDuration() {
+	public static function provideFormatDuration() {
 		return array(
 			array(
 				0,
@@ -1097,8 +1288,9 @@ class LanguageTest extends LanguageClassesTestCase {
 
 	/**
 	 * @dataProvider provideCheckTitleEncodingData
+	 * @covers Language::checkTitleEncoding
 	 */
-	function testCheckTitleEncoding( $s ) {
+	public function testCheckTitleEncoding( $s ) {
 		$this->assertEquals(
 			$s,
 			$this->getLang()->checkTitleEncoding( $s ),
@@ -1106,7 +1298,8 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-	function provideCheckTitleEncodingData() {
+	public static function provideCheckTitleEncodingData() {
+		// @codingStandardsIgnoreStart Ignore Generic.Files.LineLength.TooLong
 		return array(
 			array( "" ),
 			array( "United States of America" ), // 7bit ASCII
@@ -1157,12 +1350,14 @@ class LanguageTest extends LanguageClassesTestCase {
 				)
 			)
 		);
+		// @codingStandardsIgnoreEnd
 	}
 
 	/**
 	 * @dataProvider provideRomanNumeralsData
+	 * @covers Language::romanNumeral
 	 */
-	function testRomanNumerals( $num, $numerals ) {
+	public function testRomanNumerals( $num, $numerals ) {
 		$this->assertEquals(
 			$numerals,
 			Language::romanNumeral( $num ),
@@ -1170,7 +1365,7 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-	function provideRomanNumeralsData() {
+	public static function provideRomanNumeralsData() {
 		return array(
 			array( 1, 'I' ),
 			array( 2, 'II' ),
@@ -1218,14 +1413,86 @@ class LanguageTest extends LanguageClassesTestCase {
 	}
 
 	/**
-	 * @dataProvider providePluralData
+	 * @dataProvider provideHebrewNumeralsData
+	 * @covers Language::hebrewNumeral
 	 */
-	function testConvertPlural( $expected, $number, $forms ) {
+	public function testHebrewNumeral( $num, $numerals ) {
+		$this->assertEquals(
+			$numerals,
+			Language::hebrewNumeral( $num ),
+			"hebrewNumeral('$num')"
+		);
+	}
+
+	public static function provideHebrewNumeralsData() {
+		return array(
+			array( -1, -1 ),
+			array( 0, 0 ),
+			array( 1, "א'" ),
+			array( 2, "ב'" ),
+			array( 3, "ג'" ),
+			array( 4, "ד'" ),
+			array( 5, "ה'" ),
+			array( 6, "ו'" ),
+			array( 7, "ז'" ),
+			array( 8, "ח'" ),
+			array( 9, "ט'" ),
+			array( 10, "י'" ),
+			array( 11, 'י"א' ),
+			array( 14, 'י"ד' ),
+			array( 15, 'ט"ו' ),
+			array( 16, 'ט"ז' ),
+			array( 17, 'י"ז' ),
+			array( 20, "כ'" ),
+			array( 21, 'כ"א' ),
+			array( 30, "ל'" ),
+			array( 40, "מ'" ),
+			array( 50, "נ'" ),
+			array( 60, "ס'" ),
+			array( 70, "ע'" ),
+			array( 80, "פ'" ),
+			array( 90, "צ'" ),
+			array( 99, 'צ"ט' ),
+			array( 100, "ק'" ),
+			array( 101, 'ק"א' ),
+			array( 110, 'ק"י' ),
+			array( 200, "ר'" ),
+			array( 300, "ש'" ),
+			array( 400, "ת'" ),
+			array( 500, 'ת"ק' ),
+			array( 800, 'ת"ת' ),
+			array( 1000, "א' אלף" ),
+			array( 1001, "א'א'" ),
+			array( 1012, "א'י\"ב" ),
+			array( 1020, "א'ך'" ),
+			array( 1030, "א'ל'" ),
+			array( 1081, "א'פ\"א" ),
+			array( 2000, "ב' אלפים" ),
+			array( 2016, "ב'ט\"ז" ),
+			array( 3000, "ג' אלפים" ),
+			array( 4000, "ד' אלפים" ),
+			array( 4904, "ד'תתק\"ד" ),
+			array( 5000, "ה' אלפים" ),
+			array( 5680, "ה'תר\"ף" ),
+			array( 5690, "ה'תר\"ץ" ),
+			array( 5708, "ה'תש\"ח" ),
+			array( 5720, "ה'תש\"ך" ),
+			array( 5740, "ה'תש\"ם" ),
+			array( 5750, "ה'תש\"ן" ),
+			array( 5775, "ה'תשע\"ה" ),
+		);
+	}
+
+	/**
+	 * @dataProvider providePluralData
+	 * @covers Language::convertPlural
+	 */
+	public function testConvertPlural( $expected, $number, $forms ) {
 		$chosen = $this->getLang()->convertPlural( $number, $forms );
 		$this->assertEquals( $expected, $chosen );
 	}
 
-	function providePluralData() {
+	public static function providePluralData() {
 		// Params are: [expected text, number given, [the plural forms]]
 		return array(
 			array( 'plural', 0, array(
@@ -1255,6 +1522,34 @@ class LanguageTest extends LanguageClassesTestCase {
 			array( 'other', 2, array(
 				'kissa=kala', '1=2=3', 'other',
 			) ),
+			array( '', 2, array(
+				'0=explicit zero', '1=explicit one',
+			) ),
+		);
+	}
+
+	/**
+	 * @covers Language::embedBidi()
+	 */
+	public function testEmbedBidi() {
+		$lre = "\xE2\x80\xAA"; // U+202A LEFT-TO-RIGHT EMBEDDING
+		$rle = "\xE2\x80\xAB"; // U+202B RIGHT-TO-LEFT EMBEDDING
+		$pdf = "\xE2\x80\xAC"; // U+202C POP DIRECTIONAL FORMATTING
+		$lang = $this->getLang();
+		$this->assertEquals(
+			'123',
+			$lang->embedBidi( '123' ),
+			'embedBidi with neutral argument'
+		);
+		$this->assertEquals(
+			$lre . 'Ben_(WMF)' . $pdf,
+			$lang->embedBidi( 'Ben_(WMF)' ),
+			'embedBidi with LTR argument'
+		);
+		$this->assertEquals(
+			$rle . 'יהודי (מנוחין)' . $pdf,
+			$lang->embedBidi( 'יהודי (מנוחין)' ),
+			'embedBidi with RTL argument'
 		);
 	}
 
@@ -1262,7 +1557,7 @@ class LanguageTest extends LanguageClassesTestCase {
 	 * @covers Language::translateBlockExpiry()
 	 * @dataProvider provideTranslateBlockExpiry
 	 */
-	function testTranslateBlockExpiry( $expectedData, $str, $desc ) {
+	public function testTranslateBlockExpiry( $expectedData, $str, $desc ) {
 		$lang = $this->getLang();
 		if ( is_array( $expectedData ) ) {
 			list( $func, $arg ) = $expectedData;
@@ -1273,7 +1568,7 @@ class LanguageTest extends LanguageClassesTestCase {
 		$this->assertEquals( $expected, $lang->translateBlockExpiry( $str ), $desc );
 	}
 
-	function provideTranslateBlockExpiry() {
+	public static function provideTranslateBlockExpiry() {
 		return array(
 			array( '2 hours', '2 hours', 'simple data from ipboptions' ),
 			array( 'indefinite', 'infinite', 'infinite from ipboptions' ),
@@ -1282,7 +1577,11 @@ class LanguageTest extends LanguageClassesTestCase {
 			array( array( 'formatDuration', 1023 * 60 * 60 ), '1023 hours', 'relative' ),
 			array( array( 'formatDuration', -1023 ), '-1023 seconds', 'negative relative' ),
 			array( array( 'formatDuration', 0 ), 'now', 'now' ),
-			array( array( 'timeanddate', '20120102070000' ), '2012-1-1 7:00 +1 day', 'mixed, handled as absolute' ),
+			array(
+				array( 'timeanddate', '20120102070000' ),
+				'2012-1-1 7:00 +1 day',
+				'mixed, handled as absolute'
+			),
 			array( array( 'timeanddate', '19910203040506' ), '1991-2-3 4:05:06', 'absolute' ),
 			array( array( 'timeanddate', '19700101000000' ), '1970-1-1 0:00:00', 'absolute at epoch' ),
 			array( array( 'timeanddate', '19691231235959' ), '1969-12-31 23:59:59', 'time before epoch' ),
@@ -1291,10 +1590,33 @@ class LanguageTest extends LanguageClassesTestCase {
 	}
 
 	/**
+	 * @dataProvider parseFormattedNumberProvider
+	 */
+	public function testParseFormattedNumber( $langCode, $number ) {
+		$lang = Language::factory( $langCode );
+
+		$localisedNum = $lang->formatNum( $number );
+		$normalisedNum = $lang->parseFormattedNumber( $localisedNum );
+
+		$this->assertEquals( $number, $normalisedNum );
+	}
+
+	public function parseFormattedNumberProvider() {
+		return array(
+			array( 'de', 377.01 ),
+			array( 'fa', 334 ),
+			array( 'fa', 382.772 ),
+			array( 'ar', 1844 ),
+			array( 'lzh', 3731 ),
+			array( 'zh-classical', 7432 )
+		);
+	}
+
+	/**
 	 * @covers Language::commafy()
 	 * @dataProvider provideCommafyData
 	 */
-	function testCommafy( $number, $numbersWithCommas ) {
+	public function testCommafy( $number, $numbersWithCommas ) {
 		$this->assertEquals(
 			$numbersWithCommas,
 			$this->getLang()->commafy( $number ),
@@ -1302,15 +1624,16 @@ class LanguageTest extends LanguageClassesTestCase {
 		);
 	}
 
-	function provideCommafyData() {
+	public static function provideCommafyData() {
 		return array(
-			array( 1, '1' ),
+			array( -1, '-1' ),
 			array( 10, '10' ),
 			array( 100, '100' ),
 			array( 1000, '1,000' ),
 			array( 10000, '10,000' ),
 			array( 100000, '100,000' ),
 			array( 1000000, '1,000,000' ),
+			array( -1.0001, '-1.0001' ),
 			array( 1.0001, '1.0001' ),
 			array( 10.0001, '10.0001' ),
 			array( 100.0001, '100.0001' ),
@@ -1318,10 +1641,15 @@ class LanguageTest extends LanguageClassesTestCase {
 			array( 10000.0001, '10,000.0001' ),
 			array( 100000.0001, '100,000.0001' ),
 			array( 1000000.0001, '1,000,000.0001' ),
+			array( '200000000000000000000', '200,000,000,000,000,000,000' ),
+			array( '-200000000000000000000', '-200,000,000,000,000,000,000' ),
 		);
 	}
 
-	function testListToText() {
+	/**
+	 * @covers Language::listToText
+	 */
+	public function testListToText() {
 		$lang = $this->getLang();
 		$and = $lang->getMessageFromDB( 'and' );
 		$s = $lang->getMessageFromDB( 'word-separator' );
@@ -1336,17 +1664,68 @@ class LanguageTest extends LanguageClassesTestCase {
 
 	/**
 	 * @dataProvider provideIsSupportedLanguage
+	 * @covers Language::isSupportedLanguage
 	 */
-	function testIsSupportedLanguage( $code, $expected, $comment ) {
+	public function testIsSupportedLanguage( $code, $expected, $comment ) {
 		$this->assertEquals( $expected, Language::isSupportedLanguage( $code ), $comment );
 	}
 
-	static function provideIsSupportedLanguage() {
+	public static function provideIsSupportedLanguage() {
 		return array(
 			array( 'en', true, 'is supported language' ),
 			array( 'fi', true, 'is supported language' ),
 			array( 'bunny', false, 'is not supported language' ),
 			array( 'FI', false, 'is not supported language, input should be in lower case' ),
+		);
+	}
+
+	/**
+	 * @dataProvider provideGetParentLanguage
+	 * @covers Language::getParentLanguage
+	 */
+	public function testGetParentLanguage( $code, $expected, $comment ) {
+		$lang = Language::factory( $code );
+		if ( is_null( $expected ) ) {
+			$this->assertNull( $lang->getParentLanguage(), $comment );
+		} else {
+			$this->assertEquals( $expected, $lang->getParentLanguage()->getCode(), $comment );
+		}
+	}
+
+	public static function provideGetParentLanguage() {
+		return array(
+			array( 'zh-cn', 'zh', 'zh is the parent language of zh-cn' ),
+			array( 'zh', 'zh', 'zh is defined as the parent language of zh, '
+				. 'because zh converter can convert zh-cn to zh' ),
+			array( 'zh-invalid', null, 'do not be fooled by arbitrarily composed language codes' ),
+			array( 'en-gb', null, 'en does not have converter' ),
+			array( 'en', null, 'en does not have converter. Although FakeConverter '
+					. 'handles en -> en conversion but it is useless' ),
+		);
+	}
+
+	/**
+	 * @dataProvider provideGetNamespaceAliases
+	 * @covers Language::getNamespaceAliases
+	 */
+	public function testGetNamespaceAliases( $languageCode, $subset ) {
+		$language = Language::factory( $languageCode );
+		$aliases = $language->getNamespaceAliases();
+		foreach ( $subset as $alias => $nsId ) {
+			$this->assertEquals( $nsId, $aliases[$alias] );
+		}
+	}
+
+	public static function provideGetNamespaceAliases() {
+		// TODO: Add tests for NS_PROJECT_TALK and GenderNamespaces
+		return array(
+			array(
+				'zh',
+				array(
+					'文件' => NS_FILE,
+					'檔案' => NS_FILE,
+				),
+			),
 		);
 	}
 }

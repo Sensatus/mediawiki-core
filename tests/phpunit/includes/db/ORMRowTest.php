@@ -34,7 +34,6 @@
  * that hold the first tests in a pending state awaiting access to the database.
  * @group medium
  *
- * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
 abstract class ORMRowTest extends \MediaWikiTestCase {
@@ -71,11 +70,12 @@ abstract class ORMRowTest extends \MediaWikiTestCase {
 	/**
 	 * @since 1.20
 	 * @param array $data
-	 * @param boolean $loadDefaults
+	 * @param bool $loadDefaults
 	 * @return IORMRow
 	 */
 	protected function getRowInstance( array $data, $loadDefaults ) {
 		$class = $this->getRowClass();
+
 		return new $class( $this->getTableInstance(), $data, $loadDefaults );
 	}
 
@@ -114,7 +114,7 @@ abstract class ORMRowTest extends \MediaWikiTestCase {
 
 	/**
 	 * @since 1.20
-	 * @return array of IORMRow
+	 * @return array Array of IORMRow
 	 */
 	public function instanceProvider() {
 		$instances = array();

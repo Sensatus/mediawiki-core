@@ -20,26 +20,25 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
- * @since 1.20
- *
  * @ingroup Test
- *
- * @group ORM
- *
+ * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ */
+
+/**
  * The database group has as a side effect that temporal database tables are created. This makes
  * it possible to test without poisoning a production database.
- * @group Database
  *
  * Some of the tests takes more time, and needs therefor longer time before they can be aborted
  * as non-functional. The reason why tests are aborted is assumed to be set up of temporal databases
  * that hold the first tests in a pending state awaiting access to the database.
- * @group medium
  *
- * @licence GNU GPL v2+
- * @author Jeroen De Dauw < jeroendedauw@gmail.com >
+ * @since 1.20
+ *
+ * @group ORM
+ * @group Database
+ * @group medium
+ * @covers TestORMRow
  */
-require_once __DIR__ . "/ORMRowTest.php";
-
 class TestORMRowTest extends ORMRowTest {
 
 	/**
@@ -64,23 +63,40 @@ class TestORMRowTest extends ORMRowTest {
 		$dbw = wfGetDB( DB_MASTER );
 
 		$isSqlite = $GLOBALS['wgDBtype'] === 'sqlite';
+		$isPostgres = $GLOBALS['wgDBtype'] === 'postgres';
 
 		$idField = $isSqlite ? 'INTEGER' : 'INT unsigned';
 		$primaryKey = $isSqlite ? 'PRIMARY KEY AUTOINCREMENT' : 'auto_increment PRIMARY KEY';
 
-		$dbw->query(
-			'CREATE TABLE IF NOT EXISTS ' . $dbw->tableName( 'orm_test' ) . '(
-				test_id                    ' . $idField . '        NOT NULL ' . $primaryKey . ',
-				test_name                  VARCHAR(255)        NOT NULL,
-				test_age                   TINYINT unsigned    NOT NULL,
-				test_height                FLOAT               NOT NULL,
-				test_awesome               TINYINT unsigned    NOT NULL,
-				test_stuff                 BLOB                NOT NULL,
-				test_moarstuff             BLOB                NOT NULL,
-				test_time                  varbinary(14)       NOT NULL
-			);',
-			__METHOD__
-		);
+		if ( $isPostgres ) {
+			$dbw->query(
+				'CREATE TABLE IF NOT EXISTS ' . $dbw->tableName( 'orm_test' ) . "(
+					test_id serial PRIMARY KEY,
+					test_name TEXT NOT NULL DEFAULT '',
+					test_age INTEGER NOT NULL DEFAULT 0,
+					test_height REAL NOT NULL DEFAULT 0,
+					test_awesome INTEGER NOT NULL DEFAULT 0,
+					test_stuff BYTEA,
+					test_moarstuff BYTEA,
+					test_time TIMESTAMPTZ
+					);",
+					__METHOD__
+				);
+		} else {
+			$dbw->query(
+				'CREATE TABLE IF NOT EXISTS ' . $dbw->tableName( 'orm_test' ) . '(
+					test_id                    ' . $idField . '        NOT NULL ' . $primaryKey . ',
+					test_name                  VARCHAR(255)        NOT NULL,
+					test_age                   TINYINT unsigned    NOT NULL,
+					test_height                FLOAT               NOT NULL,
+					test_awesome               TINYINT unsigned    NOT NULL,
+					test_stuff                 BLOB                NOT NULL,
+					test_moarstuff             BLOB                NOT NULL,
+					test_time                  varbinary(14)       NOT NULL
+				);',
+				__METHOD__
+			);
+		}
 	}
 
 	protected function tearDown() {
@@ -91,11 +107,12 @@ class TestORMRowTest extends ORMRowTest {
 	}
 
 	public function constructorTestProvider() {
+		$dbw = wfGetDB( DB_MASTER );
 		return array(
 			array(
 				array(
 					'name' => 'Foobar',
-					'time' => '20120101020202',
+					'time' => $dbw->timestamp( '20120101020202' ),
 					'age' => 42,
 					'height' => 9000.1,
 					'awesome' => true,
@@ -122,12 +139,16 @@ class TestORMRowTest extends ORMRowTest {
 			'blob' => new stdClass()
 		);
 	}
-
 }
 
-class TestORMRow extends ORMRow {}
+class TestORMRow extends ORMRow {
+}
 
 class TestORMTable extends ORMTable {
+
+	public function __construct() {
+		$this->fieldPrefix = 'test_';
+	}
 
 	/**
 	 * Returns the name of the database table objects of this type are stored in.
@@ -183,17 +204,4 @@ class TestORMTable extends ORMTable {
 			'time' => 'str', // TS_MW
 		);
 	}
-
-	/**
-	 * Gets the db field prefix.
-	 *
-	 * @since 1.20
-	 *
-	 * @return string
-	 */
-	protected function getFieldPrefix() {
-		return 'test_';
-	}
-
-
 }

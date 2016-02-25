@@ -24,15 +24,14 @@
  * @author  Platonides
  */
 
-require_once( __DIR__ . '/Benchmarker.php' );
+require_once __DIR__ . '/Benchmarker.php';
 
 /**
  * Maintenance script that benchmarks HTTP request vs HTTPS request.
  *
  * @ingroup Benchmark
  */
-class bench_HTTP_HTTPS extends Benchmarker {
-
+class BenchHttpHttps extends Benchmarker {
 	public function __construct() {
 		parent::__construct();
 		$this->mDescription = "Benchmark HTTP request vs HTTPS request.";
@@ -42,12 +41,12 @@ class bench_HTTP_HTTPS extends Benchmarker {
 		$this->bench( array(
 			array( 'function' => array( $this, 'getHTTP' ) ),
 			array( 'function' => array( $this, 'getHTTPS' ) ),
-		));
+		) );
 		print $this->getFormattedResults();
 	}
 
 	static function doRequest( $proto ) {
-		Http::get( "$proto://localhost/" );
+		Http::get( "$proto://localhost/", array(), __METHOD__ );
 	}
 
 	// bench function 1
@@ -61,5 +60,5 @@ class bench_HTTP_HTTPS extends Benchmarker {
 	}
 }
 
-$maintClass = 'bench_HTTP_HTTPS';
-require_once( RUN_MAINTENANCE_IF_MAIN );
+$maintClass = 'BenchHttpHttps';
+require_once RUN_MAINTENANCE_IF_MAIN;
