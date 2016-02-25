@@ -1,42 +1,45 @@
 <?php
+
 /**
- * Test the database access and core functionallity of MathRenderer.
-*
-* @group Math
-* @group Database //Used by needsDB
-*/
+ * Test the database access and core functionality of MathRenderer.
+ *
+ * @covers MathRenderer
+ *
+ * @group Math
+ * @group Database //Used by needsDB
+ *
+ * @licence GNU GPL v2+
+ */
 class MathDatabaseTest extends MediaWikiTestCase {
-	var $renderer;
+	/**
+	 * @var MathRenderer
+	 */
+	private $renderer;
 	const SOME_TEX = "a+b";
-	const SOME_HTML = "a<sub>b</sub>";
-	const SOME_MATHML = "i⁢ℏ⁢∂t⁡Ψ=H^⁢Ψ<mrow><\ci>";
-	const SOME_LOG = "Sample Log Text.";
-	const SOME_STATUSCODE = 2;
-	const SOME_TIMESTAMP = 1272509157;
-	const SOME_VALIDXML = true;
-	const NUM_BASIC_FIELDS = 5;
+	const SOME_HTML = "a<sub>b</sub> and so on";
+	const SOME_MATHML = "iℏ∂_tΨ=H^Ψ<mrow><\ci>";
+	const SOME_CONSERVATIVENESS = 2;
+	const SOME_OUTPUTHASH = 'C65c884f742c8591808a121a828bc09f8<';
+
 
 	/**
 	 * creates a new database connection and a new math renderer
 	 * TODO: Check if there is a way to get database access without creating
-	 * the connection to the datbase explictly
+	 * the connection to the database explicitly
 	 * function addDBData() {
-	 * 	$this->tablesUsed[] = 'math';
+	 *    $this->tablesUsed[] = 'math';
 	 * }
-	 * was not sufficant.
+	 * was not sufficient.
 	 */
 	protected function setup() {
-		global $wgDebugMath;
 		parent::setUp();
-		// TODO:figure out why this is neccessary
+		// TODO: figure out why this is necessary
 		$this->db = wfGetDB( DB_MASTER );
 		// Create a new instance of MathSource
-		$this->renderer = $this->getMockForAbstractClass( 'MathRenderer', array ( self::SOME_TEX ) );
+		$this->renderer = new MathTexvc( self::SOME_TEX );
 		$this->tablesUsed[] = 'math';
-		self::setupTestDB( $this->db, "mathtest" );
-
-		$wgDebugMath = FALSE;
 	}
+
 	/**
 	 * Checks the tex and hash functions
 	 * @covers MathRenderer::getInputHash()
@@ -47,51 +50,45 @@ class MathDatabaseTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * Helper function to set the current state of the sample renderer istance to the test values
+	 * Helper function to set the current state of the sample renderer instance to the test values
 	 */
 	public function setValues() {
 		// set some values
 		$this->renderer->setTex( self::SOME_TEX );
-		$this->renderer->setHtml( self::SOME_HTML );
 		$this->renderer->setMathml( self::SOME_MATHML );
+		$this->renderer->setHtml( self::SOME_HTML );
+		$this->renderer->setOutputHash( self::SOME_OUTPUTHASH );
 	}
+
 	/**
-	 * Checks database access. Writes an etry and reads it back.
-	 * @convers MathRenderer::writeDatabaseEntry()
-	 * @convers MathRenderer::readDatabaseEntry()
+	 * Checks database access. Writes an entry and reads it back.
+	 * @covers MathRenderer::writeDatabaseEntry()
+	 * @covers MathRenderer::readDatabaseEntry()
 	 */
 	public function testDBBasics() {
-		// ;
 		$this->setValues();
-		$wgDebugMath = false;
-
-		$this->renderer->writeToDatabase();
-
-		$renderer2 = $this->getMockForAbstractClass( 'MathRenderer', array ( self::SOME_TEX ) );
-		$renderer2->readFromDatabase();
+		$this->renderer->writeToDatabase( $this->db );
+		$renderer2 = new MathTexvc( self::SOME_TEX );
+		$this->assertTrue( $renderer2->readFromDatabase(), 'Reading from database failed' );
 		// comparing the class object does now work due to null values etc.
-		// $this->assertEquals($this->renderer,$renderer2);
-		$this->assertEquals( $this->renderer->getTex(), $renderer2->getTex(), "test if tex is the same" );
-		$this->assertEquals( $this->renderer->getMathml(), $renderer2->getMathml(), "Check MathML encoding" );
-		$this->assertEquals( $this->renderer->getHtml(), $renderer2->getHtml() );
+		$this->assertEquals(
+			$this->renderer->getTex(), $renderer2->getTex(), "test if tex is the same"
+		);
+		$this->assertEquals(
+			$this->renderer->getMathml(), $renderer2->getMathml(), "Check MathML encoding"
+		);
+		$this->assertEquals(
+			$this->renderer->getHtml(), $renderer2->getHtml(), 'test if HTML is the same'
+		);
 	}
 
-
-
 	/**
-	 * Checks the creation of the math table without debugging endabled.
+	 * Checks the creation of the math table.
 	 * @covers MathHooks::onLoadExtensionSchemaUpdates
 	 */
-	public function testBasicCreateTable() {
-		if( $this->db->getType() === 'sqlite' ) {
-			$this->markTestSkipped( "SQLite has global indices. We cannot " .
-				"create the `unitest_math` table, its math_inputhash index " .
-				"would conflict with the one from the real `math` table."
-			);
-		}
-		global $wgDebugMath;
+	public function testCreateTable() {
+		$this->setMwGlobals( 'wgMathValidModes', array( 'png' ) );
 		$this->db->dropTable( "math", __METHOD__ );
-		$wgDebugMath = false;
 		$dbu = DatabaseUpdater::newForDB( $this->db );
 		$dbu->doUpdates( array( "extensions" ) );
 		$this->expectOutputRegex( '/(.*)Creating math table(.*)/' );
@@ -99,7 +96,29 @@ class MathDatabaseTest extends MediaWikiTestCase {
 		$this->renderer->writeToDatabase();
 		$res = $this->db->select( "math", "*" );
 		$row = $res->fetchRow();
-		$this->assertEquals( sizeof( $row ), 2 * self::NUM_BASIC_FIELDS );
+		$this->assertEquals( 10, count( $row ) );
 	}
 
+	/*
+	 * This test checks if no additional write operation
+	 * is performed, if the entry already existed in the database.
+	 */
+	public function testNoWrite() {
+		$this->setValues();
+		$inputHash = $this->renderer->getInputHash();
+		$this->assertTrue( $this->renderer->isChanged() );
+		$this->assertTrue( $this->renderer->writeCache(), "Write new entry" );
+		$res = $this->db->selectField( "math", "math_inputhash",
+			array( "math_inputhash" => $inputHash ) );
+		$this->assertTrue( $res !== false, "Check database entry" );
+		$this->assertTrue( $this->renderer->readFromDatabase(), "Read entry from database" );
+		$this->assertFalse( $this->renderer->isChanged() );
+		// modify the database entry manually
+		$this->db->delete( "math", array( "math_inputhash" => $inputHash ) );
+		// the renderer should not be aware of the modification and should not recreate the entry
+		$this->assertFalse( $this->renderer->writeCache() );
+		// as a result no entry can be found in the database.
+		$this->assertFalse( $this->renderer->readFromDatabase() );
+
+	}
 }

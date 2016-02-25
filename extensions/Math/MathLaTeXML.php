@@ -1,4 +1,6 @@
 <?php
+use MediaWiki\Logger\LoggerFactory;
+
 /**
  * MediaWiki math extension
  *
@@ -9,24 +11,48 @@
  * @file
  */
 
-class MathLaTeXML extends MathRenderer {
-
-	/**
-	 * @var String settings for LaTeXML daemon
-	 */
+class MathLaTeXML extends MathMathML {
+	protected $defaultAllowedRootElements = array( 'math', 'div', 'table', 'query' );
+	/** @var String settings for LaTeXML daemon */
 	private $LaTeXMLSettings = '';
-	const DEFAULT_LATEXML_SETTING = 'format=xhtml&whatsin=math&whatsout=math&pmml&cmml&nodefaultresources&preload=LaTeX.pool&preload=article.cls&preload=amsmath.sty&preload=amsthm.sty&preload=amstext.sty&preload=amssymb.sty&preload=eucal.sty&preload=[dvipsnames]xcolor.sty&preload=url.sty&preload=hyperref.sty&preload=[ids]latexml.sty&preload=texvc';
 
+	public function __construct( $tex = '', $params = array() ) {
+		global $wgMathLaTeXMLUrl;
+		parent::__construct( $tex, $params );
+		$this->hosts = $wgMathLaTeXMLUrl;
+		$this->setMode( 'latexml' );
+	}
+	/**
+	 * Converts an array with LaTeXML settings to a URL encoded String.
+	 * If the argument is a string the input will be returned.
+	 * Thus the function has projector properties and can be applied a second time safely.
+	 * @param (string|array) $array
+	 * @return string
+	 */
+	public function serializeSettings( $array ) {
+		if ( !is_array( $array ) ) {
+			return $array;
+		} else {
+			// removes the [1] [2]... for the unnamed subarrays since LaTeXML
+			// assigns multiple values to one key e.g.
+			// preload=amsmath.sty&preload=amsthm.sty&preload=amstext.sty
+			$cgi_string = wfArrayToCgi( $array );
+			$cgi_string = preg_replace( '|\%5B\d+\%5D|', '', $cgi_string );
+			$cgi_string = preg_replace( '|&\d+=|', '&', $cgi_string );
+			return $cgi_string;
+		}
+	}
 	/**
 	 * Gets the settings for the LaTeXML daemon.
-	 *
+	 * @global (array|string) $wgMathDefaultLaTeXMLSetting
 	 * @return string
 	 */
 	public function getLaTeXMLSettings() {
+		global $wgMathDefaultLaTeXMLSetting;
 		if ( $this->LaTeXMLSettings ) {
 			return $this->LaTeXMLSettings;
 		} else {
-			return self::DEFAULT_LATEXML_SETTING;
+			return $wgMathDefaultLaTeXMLSetting;
 		}
 	}
 
@@ -36,119 +62,10 @@ class MathLaTeXML extends MathRenderer {
 	 * For a list of possible settings see:
 	 * http://dlmf.nist.gov/LaTeXML/manual/commands/latexmlpost.xhtml
 	 * An empty value indicates to use the default settings.
-	 * @param string $settings
+	 * @param string|array $settings
 	 */
 	public function setLaTeXMLSettings( $settings ) {
 		$this->LaTeXMLSettings = $settings;
-	}
-
-	/* (non-PHPdoc)
-	 * @see MathRenderer::render()
-	*/
-	public function render( $forceReRendering = false ) {
-		if ( $forceReRendering ) {
-			$this->setPurge( true );
-		}
-		if ( $this->renderingRequired() ) {
-			$res = $this->doRender( );
-			if ( ! $res ) {
-				return $this->getLastError();
-			}
-		}
-		return $this->getMathMLTag();
-	}
-
-	/**
-	 * Helper function to checks if the math tag must be rendered.
-	 * @return boolean
-	 */
-	private function renderingRequired() {
-		if ( $this->isPurge() ) {
-			wfDebugLog( "Math", "Rerendering was requested." );
-			return true;
-		} else {
-			$dbres = $this->readFromDatabase();
-			if ( $dbres ) {
-				if ( self::isValidMathML( $this->getMathml() ) ) {
-					wfDebugLog( "Math", "Valid entry found in database." );
-					return false;
-				} else {
-					wfDebugLog( "Math", "Malformatted entry found in database" );
-					return true;
-				}
-			} else {
-				wfDebugLog( "Math", "No entry found in database." );
-				return true;
-			}
-		}
-	}
-
-	/**
-	 * Performs a HTTP Post request to the given host.
-	 * Uses $wgLaTeXMLTimeout as timeout.
-	 * Generates error messages on failure
-	 * @see Http::post()
-	 *
-	 * @param string $host
-	 * @param string $post the encoded post request
-	 * @param mixed $res the result
-	 * @param mixed $error the formatted error message or null
-	 * @param String $httpRequestClass class name of MWHttpRequest (needed for testing only)
-	 * @return boolean success
-	 */
-	public function makeRequest( $host, $post, &$res, &$error = '', $httpRequestClass = 'MWHttpRequest' ) {
-		global $wgLaTeXMLTimeout;
-		$error = '';
-		$res = null;
-		$options = array( 'method' => 'POST', 'postData' => $post, 'timeout' => $wgLaTeXMLTimeout );
-		$req = $httpRequestClass::factory( $host, $options );
-		$status = $req->execute();
-		if ( $status->isGood() ) {
-			$res = $req->getContent();
-			return true;
-		} else {
-			if ( $status->hasMessage( 'http-timed-out' ) ) {
-				$error = $this->getError( 'math_latexml_timeout', $host );
-				$res = false;
-				wfDebugLog( "Math", "\nLaTeXML Timeout:"
-					. var_export( array( 'post' => $post, 'host' => $host
-						, 'wgLaTeXMLTimeout' => $wgLaTeXMLTimeout ), true ) . "\n\n" );
-			} else {
-				// for any other unkonwn http error
-				$errormsg = $status->getHtml();
-				$error = $this->getError( 'math_latexml_invalidresponse', $host, $errormsg );
-				wfDebugLog( "Math", "\nLaTeXML NoResponse:"
-					. var_export( array( 'post' => $post, 'host' => $host
-						, 'errormsg' => $errormsg ), true ) . "\n\n" );
-			}
-			return false;
-		}
-	}
-
-	/* (non-PHPdoc)
-	 * @see MathRenderer::writeCache()
-	*/
-	public function writeCache() {
-		if ( $this->isChanged() ) {
-			$this->writeToDatabase();
-		}
-	}
-
-	/**
-	 * Picks a LaTeXML daemon.
-	 * If more than one demon are availible one is chosen from the
-	 * $wgLaTeXMLUrl array.
-	 * @return string
-	 */
-	private static function pickHost() {
-		global $wgLaTeXMLUrl;
-		if ( is_array( $wgLaTeXMLUrl ) ) {
-			$host = array_rand( $wgLaTeXMLUrl );
-		} else {
-			$host = $wgLaTeXMLUrl;
-		}
-		wfDebugLog( "Math", "picking host " . $host );
-		return $host;
 	}
 
 	/**
@@ -156,40 +73,75 @@ class MathLaTeXML extends MathRenderer {
 	 * and the input string only.
 	 * @return string HTTP POST data
 	 */
-	public function getPostData() {
-		$texcmd = urlencode( $this->tex );
-		return $this->getLaTeXMLSettings() . '&tex=' . $texcmd;
+	public function getLaTeXMLPostData() {
+		$tex = $this->getTex();
+		if ( $this->getMathStyle() == 'inlineDisplaystyle' ) {
+			// In 'inlineDisplaystyle' the old
+			// texvc behavior is reproduced:
+			// The equation is rendered in displaystyle
+			// (texvc used $$ $tex $$ to render)
+			// but the equation is not centered.
+			$tex = '{\displaystyle ' . $tex . '}';
+		}
+		$texcmd = rawurlencode( $tex );
+		$settings = $this->serializeSettings( $this->getLaTeXMLSettings() );
+		$postData = $settings . '&tex=' . $texcmd;
+		LoggerFactory::getInstance( 'Math' )->debug( 'Get post data: ' . $postData );
+		return $postData;
 	}
+
 	/**
 	 * Does the actual web request to convert TeX to MathML.
 	 * @return boolean
 	 */
-	private function doRender( ) {
-		$host = self::pickHost();
-		$post = $this->getPostData();
+	protected function doRender() {
+		if ( trim( $this->getTex() ) === '' ) {
+			LoggerFactory::getInstance( 'Math' )->warning(
+				'Rendering was requested, but no TeX string is specified.' );
+			$this->lastError = $this->getError( 'math_empty_tex' );
+			return false;
+		}
+		$res = '';
+		$host = $this->pickHost();
+		$post = $this->getLaTeXMLPostData();
+		// There is an API-inconsistency between different versions of the LaTeXML daemon
+		// some versions require the literal prefix other don't allow it.
+		if ( ! strpos( $host, '/convert' ) ){
+			$post = preg_replace( '/&tex=/', '&tex=literal:', $post, 1 );
+		}
 		$this->lastError = '';
-		if ( $this->makeRequest( $host, $post, $res, $this->lastError ) ) {
-			$result = json_decode( $res );
-			if ( json_last_error() === JSON_ERROR_NONE ) {
-				if ( self::isValidMathML( $result->result ) ) {
-					$this->setMathml( $result->result );
+		$requestResult = $this->makeRequest( $host, $post, $res, $this->lastError );
+		if ( $requestResult ) {
+			$jsonResult = json_decode( $res );
+			if ( $jsonResult && json_last_error() === JSON_ERROR_NONE ) {
+				if ( $this->isValidMathML( $jsonResult->result ) ) {
+					$this->setMathml( $jsonResult->result );
+					Hooks::run( 'MathRenderingResultRetrieved',
+						array( &$this,
+							   &$jsonResult ) );// Enables debugging of server results
 					return true;
 				} else {
 					// Do not print bad mathml. It's probably too verbose and might
 					// mess up the browser output.
-					$this->lastError = $this->getError( 'math_latexml_invalidxml', $host );
-					wfDebugLog( "Math", "\nLaTeXML InvalidMathML:"
-						. var_export( array( 'post' => $post, 'host' => $host
-							, 'result' => $result ), true ) . "\n\n" );
+					$this->lastError = $this->getError( 'math_invalidxml', $this->getModeStr(), $host );
+					LoggerFactory::getInstance( 'Math' )->warning(
+						'LaTeXML InvalidMathML: ' . var_export( array(
+							'post' => $post,
+							'host' => $host,
+							'result' => $res
+						), true ) );
 					return false;
 				}
 			} else {
-					$this->lastError = $this->getError( 'math_latexml_invalidjson', $host );
-					wfDebugLog( "Math", "\nLaTeXML InvalidJSON:"
-						. var_export( array( 'post' => $post, 'host' => $host
-							, 'res' => $res ), true ) . "\n\n" );
-					return false;
-				}
+				$this->lastError = $this->getError( 'math_invalidjson', $this->getModeStr(), $host );
+				LoggerFactory::getInstance( 'Math' )->warning(
+					'LaTeXML InvalidJSON:' . var_export( array(
+						'post' => $post,
+						'host' => $host,
+						'res' => $res
+					), true ) );
+				return false;
+			}
 		} else {
 			// Error message has already been set.
 			return false;
@@ -197,48 +149,19 @@ class MathLaTeXML extends MathRenderer {
 	}
 
 	/**
-	 * Checks if the input is valid MathML,
-	 * and if the root element has the name math
-	 * @param string $XML
-	 * @return boolean
-	 */
-	static public function isValidMathML( $XML ) {
-		$out = false;
-		// depends on https://gerrit.wikimedia.org/r/#/c/66365/
-		if ( ! is_callable( 'XmlTypeCheck::newFromString' ) ) {
-			$msg = wfMessage( 'math_latexml_xmlversion' )->inContentLanguage()->escaped();
-			trigger_error( $msg, E_USER_NOTICE );
-			wfDebugLog( 'Math', $msg );
-			return true;
-		}
-		$xmlObject = new XmlTypeCheck( $XML, null, false );
-		if ( ! $xmlObject->wellFormed ) {
-			wfDebugLog( "Math", "XML validation error:\n " . var_export( $XML, true ) . "\n" );
-		} else {
-			$name = $xmlObject->getRootElement();
-			$name = str_replace( 'http://www.w3.org/1998/Math/MathML:', '', $name );
-			if ( $name == "math" or $name == "table" or $name == "div" ) {
-				$out = true;
-			} else {
-				wfDebugLog( "Math", "got wrong root element " . $name );
-			}
-		}
-		return $out;
-	}
-
-	/**
 	 * Internal version of @link self::embedMathML
 	 * @return string
 	 * @return html element with rendered math
 	 */
-	private function getMathMLTag() {
+	protected function getMathMLTag() {
 		return self::embedMathML( $this->getMathml(), urldecode( $this->getTex() ) );
 	}
 
 	/**
 	 * Embeds the MathML-XML element in a HTML span element with class tex
-	 * @param string $mml: the MathML string
-	 * @param string $tagId: optional tagID for references like (pagename#equation2)
+	 * @param string $mml : the MathML string
+	 * @param string $tagId : optional tagID for references like (pagename#equation2)
+	 * @param bool $attribs
 	 * @return html element with rendered math
 	 */
 	public static function embedMathML( $mml, $tagId = '', $attribs = false ) {
@@ -253,4 +176,46 @@ class MathLaTeXML extends MathRenderer {
 		return Xml::tags( 'span', $attribs, $mml );
 	}
 
+	/**
+	 * Calculates the SVG image based on the MathML input
+	 * No cache is used.
+	 * @return boolean
+	 */
+	public function calculateSvg() {
+		$renderer = new MathMathML( $this->getTex() );
+		$renderer->setMathml( $this->getMathml() );
+		$renderer->setMode( 'latexml' );
+		$res = $renderer->render( true );
+		if ( $res == true ) {
+			$this->setSvg( $renderer->getSvg() );
+		} else {
+			$lastError = $renderer->getLastError();
+			LoggerFactory::getInstance( 'Math' )->error(
+				'Failed to convert LaTeXML-MathML to SVG:' . $lastError );
+		}
+		return $res;
+	}
+
+
+	/**
+	 * Gets the SVG image
+	 *
+	 * @param string $render if set to 'render' (default) and no SVG image exists, the function
+	 *                       tries to generate it on the fly.
+	 *                       Otherwise, if set to 'cached', and there is no SVG in the database
+	 *                       cache, an empty string is returned.
+	 *
+	 * @return string XML-Document of the rendered SVG
+	 */
+	public function getSvg( $render = 'render' ) {
+		if ( $render == 'render' && ( $this->isPurge() || $this->svg == '' ) ) {
+			$this->calculateSvg();
+		}
+		return parent::getSvg( $render );
+	}
+
+	protected function getMathTableName() {
+		return 'mathlatexml';
+	}
 }
+
