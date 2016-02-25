@@ -2,47 +2,64 @@
 /**
  * MediaWiki math extension
  *
- * (c) 2002-2012 Tomasz Wegrzanowski, Brion Vibber, Moritz Schubotz, and other MediaWiki contributors
+ * (c) 2002-2012 Tomasz Wegrzanowski, Brion Vibber, Moritz Schubotz,
+ * and other MediaWiki contributors
  * GPLv2 license; info in main package.
  *
  * @file
  */
+use MediaWiki\Logger\LoggerFactory;
 
 /**
  * Abstract base class with static methods for rendering the <math> tags using
  * different technologies. These static methods create a new instance of the
  * extending classes and render the math tags based on the mode setting of the user.
- * Furthermore this class handles the caching of the rendered output and provides
- *  debug information,
- * if run in mathdebug mode.
+ * Furthermore this class handles the caching of the rendered output.
  *
  * @author Tomasz Wegrzanowski
  * @author Brion Vibber
  * @author Moritz Schubotz
  */
 abstract class MathRenderer {
-	/**
-	 *  The following variables should made private, as soon it can be verified
-	 *  that they are not being directly accessed by other extensions.
-	 */
-	protected $mode = MW_MATH_PNG;
+
+	// REPRESENTATIONS OF THE MATHEMATICAL CONTENT
+	/** @var string tex representation */
 	protected $tex = '';
-	/**
-	 * is calculated by texvc.
-	 * @var string
-	 */
-	protected $hash = '';
-	protected $html = '';
+	/** @var string MathML content and presentation */
 	protected $mathml = '';
-	protected $conservativeness = 0;
-	protected $params = '';
+	/** @var string SVG layout only (no semantics) */
+	protected $svg = '';
+	/** @var string the original user input string (which was used to calculate the inputhash) */
+	protected $userInputTex = '';
+	// FURTHER PROPERTIES OF THE MATHEMATICAL CONTENT
+	/** @var ('inlineDisplaystyle'|'display'|'inline'|'linebreak') the rendering style */
+	protected $mathStyle = 'inlineDisplaystyle';
+	/** @var array with userdefined parameters passed to the extension (not used) */
+	protected $params = array();
+	/** @var string a userdefined identifier to link to the equation. */
+	protected $id = '';
+
+	// STATE OF THE CLASS INSTANCE
+	/** @var boolean has variable tex been security-checked */
+	protected $texSecure = false;
+	/** @var boolean has the mathematical content changed */
 	protected $changed = false;
-	/**
-	 * @var boolean forces rerendering if set to true
-	 */
+	/** @var boolean is there a database entry for the mathematical content */
+	protected $storedInDatabase = null;
+	/** @var boolean is there a request to purge the existing mathematical content */
 	protected $purge = false;
-	protected $recall;
+	/** @var string with last occurred error */
 	protected $lastError = '';
+	/** @var string md5 value from userInputTex */
+	protected $md5 = '';
+	/** @var string binary packed inputhash */
+	protected $inputHash = '';
+	/** @var string rendering mode */
+	protected $mode = 'png';
+	/** @var string input type */
+	protected $inputType = 'tex';
+	/** @var MathRestbaseInterface used for checking */
+	protected $rbi;
 
 	/**
 	 * Constructs a base MathRenderer
@@ -51,8 +68,37 @@ abstract class MathRenderer {
 	 * @param array $params (optional) HTML attributes
 	 */
 	public function __construct( $tex = '', $params = array() ) {
-		$this->tex = $tex;
 		$this->params = $params;
+		if ( isset( $params['id'] ) ) {
+			$this->id = $params['id'];
+		}
+		if ( isset( $params['display'] ) ) {
+			$layoutMode = $params['display'];
+			if ( $layoutMode == 'block' ) {
+				$this->mathStyle = 'display';
+				$tex = '{\displaystyle ' . $tex . '}';
+				$this->inputType = 'tex';
+			} elseif ( $layoutMode == 'inline' ) {
+				$this->mathStyle = 'inline';
+				$this->inputType = 'inline-tex';
+				$tex = '{\textstyle ' . $tex . '}';
+			} elseif ( $layoutMode == 'linebreak' ) {
+				$this->mathStyle = 'linebreak';
+				$tex = '\[ ' . $tex . ' \]';
+			}
+		}
+		// TODO: Implement caching for attributes of the math tag
+		// Currently the key for the database entry relating to an equation
+		// is md5($tex) the new option to determine if the tex input
+		// is rendered in displaystyle or textstyle would require a database
+		// layout change to use a composite key e.g. (md5($tex),$mathStyle).
+		// As a workaround we use the prefix \displaystyle so that the key becomes
+		// md5((\{\\displaystyle|\{\\textstyle)?\s?$tex\}?)
+		// The new value of $tex string describes now how the rendering should look like.
+		// The variable MathRenderer::mathStyle determines if the rendered equation should
+		// be centered in a new line, or just in be displayed in the current line.
+		$this->userInputTex = $tex;
+		$this->tex = $tex;
 	}
 
 	/**
@@ -60,12 +106,30 @@ abstract class MathRenderer {
 	 *
 	 * @param string $tex LaTeX markup
 	 * @param array $params HTML attributes
-	 * @param int $mode constant indicating rendering mode
+	 * @param string $mode constant indicating rendering mode
 	 * @return string HTML for math tag
 	 */
-	public static function renderMath( $tex, $params = array(), $mode = MW_MATH_PNG ) {
+	public static function renderMath( $tex, $params = array(), $mode = 'png' ) {
 		$renderer = self::getRenderer( $tex, $params, $mode );
-		return $renderer->render();
+		if ( $renderer->render() ) {
+			return $renderer->getHtmlOutput();
+		} else {
+			return $renderer->getLastError();
+		}
+	}
+
+	/**
+	 *
+	 * @param string $md5
+	 * @return MathRenderer the MathRenderer generated from md5
+	 */
+	public static function newFromMd5( $md5 ) {
+		$class = get_called_class();
+		/** @var MathRenderer $instance */
+		$instance = new $class;
+		$instance->setMd5( $md5 );
+		$instance->readFromDatabase();
+		return $instance;
 	}
 
 	/**
@@ -73,39 +137,60 @@ abstract class MathRenderer {
 	 *
 	 * @param string $tex LaTeX markup
 	 * @param array $params HTML attributes
-	 * @param int $mode constant indicating rendering mode
+	 * @param string $mode indicating rendering mode
 	 * @return MathRenderer appropriate renderer for mode
 	 */
-	public static function getRenderer( $tex, $params = array(),  $mode = MW_MATH_PNG ) {
-		global $wgDefaultUserOptions;
-		$validModes = array( MW_MATH_PNG, MW_MATH_SOURCE, MW_MATH_MATHJAX, MW_MATH_LATEXML );
-		if ( !in_array( $mode, $validModes ) )
+	public static function getRenderer( $tex, $params = array(), $mode = 'png' ) {
+		global $wgDefaultUserOptions, $wgMathEnableExperimentalInputFormats;
+
+		if ( isset( $params['forcemathmode'] ) ) {
+			$mode = $params['forcemathmode'];
+		}
+		if ( !in_array( $mode, self::getValidModes() ) ) {
 			$mode = $wgDefaultUserOptions['math'];
+		}
+		if ( $wgMathEnableExperimentalInputFormats === true && $mode == 'mathml' &&
+			 isset( $params['type'] ) ) {
+			// Support of MathML input (experimental)
+			// Currently support for mode 'mathml' only
+			if ( !in_array( $params['type'], array( 'pmml', 'ascii' ) ) ) {
+				unset( $params['type'] );
+			}
+		}
+		if ( isset( $params['chem'] ) ) {
+			$mode = 'mathml';
+			$params['type'] = 'chem';
+		}
 		switch ( $mode ) {
-			case MW_MATH_SOURCE:
+			case 'source':
 				$renderer = new MathSource( $tex, $params );
 				break;
-			case MW_MATH_MATHJAX:
-				$renderer = new MathMathJax( $tex, $params );
+			case 'png':
+				$renderer = new MathTexvc( $tex, $params );
 				break;
-			case MW_MATH_LATEXML:
+			case 'latexml':
 				$renderer = new MathLaTeXML( $tex, $params );
 				break;
-			case MW_MATH_PNG:
+			case 'mathml':
 			default:
-				$renderer = new MathTexvc( $tex, $params );
+				$renderer = new MathMathML( $tex, $params );
 		}
-		wfDebugLog ( "Math", 'start rendering $' . $renderer->tex . '$ in mode ' . $mode );
+		LoggerFactory::getInstance( 'Math' )->debug( 'Start rendering $' . $renderer->tex .
+			'$ in mode ' . $mode );
 		return $renderer;
 	}
 
 	/**
-	 * Performs the rendering and returns the rendered element that needs to be embedded.
+	 * Performs the rendering
 	 *
-	 * @return string of rendered HTML
+	 * @return boolean if rendering was successful.
 	 */
 	abstract public function render();
 
+	/**
+	 * @return string Html output that is embedded in the page
+	 */
+	abstract public function getHtmlOutput();
 
 	/**
 	 * texvc error messages
@@ -113,16 +198,39 @@ abstract class MathRenderer {
 	 * Returns an internationalized HTML error string
 	 *
 	 * @param string $msg message key for specific error
-	 * @param Varargs $parameters (optional) zero or more message parameters for specific error
+	 * @internal param \Varargs $parameters (optional) zero
+	 * or more message parameters for specific error
+	 *
 	 * @return string HTML error string
 	 */
-	protected function getError( $msg /*, ... */ ) {
+	public function getError( $msg /*, ... */ ) {
 		$mf = wfMessage( 'math_failure' )->inContentLanguage()->escaped();
 		$parameters = func_get_args();
 		array_shift( $parameters );
 		$errmsg = wfMessage( $msg, $parameters )->inContentLanguage()->escaped();
 		$source = htmlspecialchars( str_replace( "\n", ' ', $this->tex ) );
-		return "<strong class='error'>$mf ($errmsg): $source</strong>\n";
+		return "<strong class='error texerror'>$mf ($errmsg): $source</strong>\n";
+	}
+
+	/**
+	 * Return hash of input
+	 *
+	 * @return string hash
+	 */
+	public function getMd5() {
+		if ( ! $this->md5 ) {
+			$this->md5 = md5( $this->userInputTex );
+		}
+		return $this->md5;
+	}
+
+	/**
+	 * Set the input hash (if user input tex is not available)
+	 * @param $md5
+	 * @return string hash
+	 */
+	public function setMd5( $md5 ) {
+		$this->md5 = $md5;
 	}
 
 	/**
@@ -132,8 +240,23 @@ abstract class MathRenderer {
 	 */
 	public function getInputHash() {
 		// TODO: What happens if $tex is empty?
+		if ( !$this->inputHash ) {
+			$dbr = wfGetDB( DB_SLAVE );
+			return $dbr->encodeBlob( pack( "H32", $this->getMd5() ) ); # Binary packed, not hex
+		}
+		return $this->inputHash;
+	}
+
+
+	/**
+	 * Decode binary packed hash from the database to md5 of input_tex
+	 * @param string $hash (binary)
+	 * @return string md5
+	 */
+	private static function dbHash2md5( $hash ) {
 		$dbr = wfGetDB( DB_SLAVE );
-		return $dbr->encodeBlob( pack( "H32", md5( $this->tex ) ) ); # Binary packed, not hex
+		$xhash = unpack( 'H32md5', $dbr->decodeBlob( $hash ) . "                " );
+		return $xhash['md5'];
 	}
 
 	/**
@@ -143,40 +266,55 @@ abstract class MathRenderer {
 	 */
 	public function readFromDatabase() {
 		$dbr = wfGetDB( DB_SLAVE );
-		$rpage = $dbr->selectRow(
-			'math',
-			array(
-				'math_outputhash', 'math_html_conservativeness', 'math_html',
-				'math_mathml'
-			),
-			array(
-				'math_inputhash' => $this->getInputHash()
-			),
-			__METHOD__
-		);
+		$rpage = $dbr->selectRow( $this->getMathTableName(),
+			$this->dbInArray(),
+			array( 'math_inputhash' => $this->getInputHash() ),
+			__METHOD__ );
 		if ( $rpage !== false ) {
-			# Trailing 0x20s can get dropped by the database, add it back on if necessary:
-			$xhash = unpack( 'H32md5', $dbr->decodeBlob( $rpage->math_outputhash ) . "                " );
-			$this->hash = $xhash['md5'];
-			$this->conservativeness = $rpage->math_html_conservativeness;
-			$this->html = $rpage->math_html;
-			$this->mathml = utf8_decode( $rpage->math_mathml);
-			if ( ! is_callable( 'StringUtils::isUtf8' ) ) {
-				$msg = wfMessage( 'math_latexml_xmlversion' )->inContentLanguage()->escaped();
-				trigger_error( $msg, E_USER_NOTICE );
-				wfDebugLog( 'Math', $msg );
-				//If we can not check if mathml output is valid, we skip the test and assume that it is valid.
-				$this->recall = true;
+			$this->initializeFromDatabaseRow( $rpage );
+			$this->storedInDatabase = true;
 				return true;
-			} elseif( StringUtils::isUtf8( $this->mathml ) ) {
-				$this->recall = true;
-				return true;
-			}
+		} else {
+			# Missing from the database and/or the render cache
+			$this->storedInDatabase = false;
+			return false;
 		}
+	}
 
-		# Missing from the database and/or the render cache
-		$this->recall = false;
-		return false;
+	/**
+	 * @return array with the database column names
+	 */
+	protected function dbInArray() {
+		$in = array( 'math_inputhash',
+			'math_mathml',
+			'math_inputtex',
+			'math_tex',
+			'math_svg'
+		);
+		return $in;
+	}
+
+	/**
+	 * Reads the values from the database but does not overwrite set values with empty values
+	 * @param stdClass $rpage (a database row)
+	 */
+	protected function initializeFromDatabaseRow( $rpage ) {
+		$this->inputHash = $rpage->math_inputhash; // MUST NOT BE NULL
+		$this->md5 = self::dbHash2md5( $this->inputHash );
+		if ( ! empty( $rpage->math_mathml ) ) {
+			$this->mathml = utf8_decode( $rpage->math_mathml );
+		}
+		if ( ! empty( $rpage->math_inputtex ) ) {
+			// in the current database the field is probably not set.
+			$this->userInputTex = $rpage->math_inputtex;
+		}
+		if ( ! empty( $rpage->math_tex ) ) {
+			$this->tex = $rpage->math_tex;
+		}
+		if ( ! empty( $rpage->math_svg ) ) {
+			$this->svg = $rpage->math_svg;
+		}
+		$this->changed = false;
 	}
 
 	/**
@@ -184,33 +322,69 @@ abstract class MathRenderer {
 	 *
 	 * WARNING: Use writeCache() instead of this method to be sure that all
 	 * renderer specific (such as squid caching) are taken into account.
-	 * This function stores the values that are currently present in the class to the database even if they are empty.
+	 * This function stores the values that are currently present in the class
+	 * to the database even if they are empty.
 	 *
 	 * This function can be seen as protected function.
+	 * @param DatabaseBase $dbw
 	 */
-	public function writeToDatabase() {
+	public function writeToDatabase( $dbw = null ) {
 		# Now save it back to the DB:
 		if ( !wfReadOnly() ) {
-			$dbw = wfGetDB( DB_MASTER );
-			if ( $this->hash !== '' ) {
-				$outmd5_sql = $dbw->encodeBlob( pack( 'H32', $this->hash ) );
+			$dbw = $dbw ?: wfGetDB( DB_MASTER );
+			LoggerFactory::getInstance( 'Math' )->debug( 'Store entry for $' . $this->tex .
+				'$ in database (hash:' . $this->getMd5() . ')' );
+			$outArray = $this->dbOutArray();
+			$method = __METHOD__;
+			$mathTableName = $this->getMathTableName();
+			if ( $this->isInDatabase() ) {
+				$inputHash = $this->getInputHash();
+				$dbw->onTransactionIdle( function () use (
+					$dbw, $outArray, $inputHash, $method, $mathTableName
+				) {
+					$dbw->update( $mathTableName, $outArray,
+						array( 'math_inputhash' => $inputHash ), $method );
+					LoggerFactory::getInstance( 'Math' )->debug(
+						'Row updated after db transaction was idle: ' .
+						var_export( $outArray, true ) . " to database" );
+				} );
 			} else {
-				$outmd5_sql = '';
+				$dbw->onTransactionIdle( function () use (
+					$dbw, $outArray, $method, $mathTableName
+				) {
+					$dbw->insert( $mathTableName, $outArray, $method, array( 'IGNORE' ) );
+					LoggerFactory::getInstance( 'Math' )->debug(
+						'Row inserted after db transaction was idle ' .
+						var_export( $outArray, true ) . " to database" );
+					if ( $dbw->affectedRows() == 0 ) {
+						// That's the price for the delayed update.
+						LoggerFactory::getInstance( 'Math' )->warning(
+							'Entry could not be written. Might be changed in between.' );
+					}
+				} );
 			}
-			wfDebugLog( "Math", 'store entry for $' . $this->tex . '$ in database (hash:' . $this->hash . ')\n' );
-			$dbw->replace(
-				'math',
-				array( 'math_inputhash' ),
-				array(
-					'math_inputhash' => $this->getInputHash(),
-					'math_outputhash' => $outmd5_sql ,
-					'math_html_conservativeness' => $this->conservativeness,
-					'math_html' => $this->html,
-					'math_mathml' => utf8_encode( $this->mathml ),
-					),
-				__METHOD__
-			);
 		}
+	}
+
+	/**
+	 * Gets an array that matches the variables of the class to the database columns
+	 * @return array
+	 */
+	protected function dbOutArray() {
+		$out = array( 'math_inputhash' => $this->getInputHash(),
+			'math_mathml' => utf8_encode( $this->mathml ),
+			'math_inputtex' => $this->userInputTex,
+			'math_tex' => $this->tex,
+			'math_svg' => $this->svg
+		);
+		return $out;
+	}
+
+	/**
+	 * @param MathRestbaseInterface $param
+	 */
+	public function setRestbaseInterface( $param ) {
+		$this->rbi = $param;
 	}
 
 	/**
@@ -230,18 +404,19 @@ abstract class MathRenderer {
 
 
 	/**
-	 * Writes cache.  Does nothing by default
+	 * Writes cache. Writes the database entry if values were changed
 	 */
 	public function writeCache() {
-	}
-
-	/**
-	 * Determines if this is a cached/recalled render
-	 *
-	 * @return boolean true if recalled, false otherwise
-	 */
-	public function isRecall() {
-		return $this->recall;
+		$logger = LoggerFactory::getInstance( 'Math' );
+		$logger->debug( 'Writing of cache requested.' );
+		if ( $this->isChanged() ) {
+			$logger->debug( 'Change detected. Perform writing.' );
+			$this->writeToDatabase();
+			return true;
+		} else {
+			$logger->debug( "Nothing was changed. Don't write to database." );
+			return false;
+		}
 	}
 
 	/**
@@ -254,12 +429,26 @@ abstract class MathRenderer {
 	}
 
 	/**
-	 * gets the rendering mode MW_MATH_*
+	 * Gets the rendering mode
 	 *
-	 * @return int
+	 * @return string
 	 */
 	public function getMode() {
 		return $this->mode;
+	}
+
+	/**
+	 * Sets the rendering mode
+	 * @param string $newMode element of the array $wgMathValidModes
+	 * @return bool
+	 */
+	public function setMode( $newMode ) {
+		if ( in_array( $newMode, self::getValidModes() ) ) {
+			$this->mode = $newMode;
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -268,41 +457,10 @@ abstract class MathRenderer {
 	 * @param string $tex
 	 */
 	public function setTex( $tex ) {
-		$this->changed = true;
-		$this->tex = $tex;
-	}
-
-	/**
-	 * Get the hash calculated by texvc
-	 *
-	 * @return string hash
-	 */
-	public function getHash() {
-		return $this->hash;
-	}
-
-	/**
-	 * @param string $hash
-	 */
-	public function setHash( $hash ) {
-		$this->changed = true;
-		$this->hash = $hash;
-	}
-
-	/**
-	 * Returns the html-representation of the mathematical formula.
-	 * @return string
-	 */
-	public function getHtml() {
-		return $this->html;
-	}
-
-	/**
-	 * @param string $html
-	 */
-	public function setHtml( $html ) {
-		$this->changed = true;
-		$this->html = $html;
+		if ( $this->tex != $tex ) {
+			$this->changed = true;
+			$this->tex = $tex;
+		}
 	}
 
 	/**
@@ -310,6 +468,9 @@ abstract class MathRenderer {
 	 * @return string in UTF-8 encoding
 	 */
 	public function getMathml() {
+		if ( !StringUtils::isUtf8( $this->mathml ) ) {
+			$this->setMathml( '' );
+		}
 		return $this->mathml;
 	}
 
@@ -319,23 +480,6 @@ abstract class MathRenderer {
 	public function setMathml( $mathml ) {
 		$this->changed = true;
 		$this->mathml = $mathml;
-	}
-
-	/**
-	 * Gets the so called 'conservativeness' calculated by texvc
-	 *
-	 * @return int
-	 */
-	public function getConservativeness() {
-		return $this->conservativeness;
-	}
-
-	/**
-	 * @param int $conservativeness
-	 */
-	public function setConservativeness( $conservativeness ) {
-		$this->changed = true;
-		$this->conservativeness = $conservativeness;
 	}
 
 	/**
@@ -372,19 +516,27 @@ abstract class MathRenderer {
 	 * Checks if there is an explicit user request to rerender the math-tag.
 	 * @return boolean
 	 */
-	function isPurge( ) {
+	function isPurge() {
 		if ( $this->purge ) {
 			return true;
 		}
+		$request = RequestContext::getMain()->getRequest();
 		// TODO: Figure out if ?action=purge
+		// $action = $request->getText('action'); //always returns ''
 		// until this issue is resolved we use ?mathpurge=true instead
-		global $wgRequest;
-		return ( $wgRequest->getVal( 'mathpurge' ) === "true" );
+		$mathpurge = $request->getBool( 'mathpurge', false );
+		if ( $mathpurge ) {
+			LoggerFactory::getInstance( 'Math' )->debug( 'Re-Rendering on user request' );
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**
 	 * Sets purge. If set to true the render is forced to rerender and must not
 	 * use a cached version.
+	 * @param bool $purge
 	 * @return boolean
 	 */
 	function setPurge( $purge = true ) {
@@ -392,8 +544,159 @@ abstract class MathRenderer {
 		$this->purge = $purge;
 	}
 
-	function getLastError(){
+	function getLastError() {
 		return $this->lastError;
 	}
-}
 
+	/**
+	 *
+	 * @param string $mathStyle ('inlineDisplaystyle'|'display'|'inline')
+	 */
+	public function setMathStyle( $mathStyle = 'display' ) {
+		if ( $this->mathStyle !== $mathStyle ){
+			$this->changed = true;
+		}
+		$this->mathStyle = $mathStyle;
+		if ( $mathStyle == 'inline' ){
+			$this->inputType = 'inline-tex';
+		} else {
+			$this->inputType = 'tex';
+		}
+	}
+
+	/**
+	 * Returns the value of the DisplayStyle attribute
+	 * @return string ('inlineDisplaystyle'|'display'|'inline'|'linebreak') the DisplayStyle
+	 */
+	public function getMathStyle() {
+		return $this->mathStyle;
+	}
+
+	/**
+	 * Get if the input tex was marked as secure
+	 * @return boolean
+	 */
+	public function isTexSecure() {
+		return $this->texSecure;
+	}
+
+	/**
+	 * @global $wgMathDisableTexFilter
+	 * @return bool
+	 */
+	public function checkTeX() {
+		if ( $this->texSecure || self::getDisableTexFilter() == 'always' ) {
+			// equation was already checked or checking is disabled
+			return true;
+		} else {
+			if ( self::getDisableTexFilter() == 'new' && $this->mode != 'source' ){
+				if ( $this->readFromDatabase() ) {
+					return true;
+				}
+			}
+			$checker = new MathInputCheckRestbase( $this->tex, $this->getInputType(), $this->rbi );
+			try {
+				if ( $checker->isValid() ) {
+					$this->setTex( $checker->getValidTex() );
+					$this->texSecure = true;
+					return true;
+				}
+			} catch ( MWException $e ) {
+			}
+			$this->lastError = $checker->getError();
+			return false;
+		}
+	}
+
+	public function isInDatabase() {
+		if ( $this->storedInDatabase === null ) {
+			$this->readFromDatabase();
+		}
+		return $this->storedInDatabase;
+	}
+
+	/**
+	 *
+	 * @return string TeX the original tex string specified by the user
+	 */
+	public function getUserInputTex() {
+		return $this->userInputTex;
+	}
+
+	/**
+	 * @return string user defined ID
+	 */
+	public function getID() {
+		return $this->id;
+	}
+
+	/**
+	 * @param string user defined ID
+	 */
+	public function setID( $id ) {
+		// Changes in the ID affect the container for the math element on the current page
+		// only. Therefore an id change does not affect the $this->changed variable, which
+		// indicates if database relevant fields have been changed.
+		$this->id = $id;
+	}
+
+	/**
+	 *
+	 * @param string $svg
+	 */
+	public function setSvg( $svg ) {
+		$this->changed = true;
+		$this->svg = trim( $svg );
+	}
+
+	/**
+	 * Gets the SVG image
+	 *
+	 * @param string $render if set to 'render' (default) and no SVG image exists, the function
+	 *                       tries to generate it on the fly.
+	 *                       Otherwise, if set to 'cached', and there is no SVG in the database
+	 *                       cache, an empty string is returned.
+	 *
+	 * @return string XML-Document of the rendered SVG
+	 */
+	public function getSvg( /** @noinspection PhpUnusedParameterInspection */ $render = 'render' ) {
+		// Spaces will prevent the image from being displayed correctly in the browser
+		if ( !$this->svg && $this->rbi ){
+			$this->svg = $this->rbi->getSvg();
+		}
+		return trim( $this->svg );
+	}
+
+	abstract protected function getMathTableName();
+
+	public function getModeStr() {
+		$names = MathHooks::getMathNames();
+		return $names[ $this->getMode() ];
+	}
+
+	public static function getValidModes() {
+		global $wgMathValidModes;
+		return array_map( "MathHooks::mathModeToString", $wgMathValidModes );
+	}
+
+
+	public static function getDisableTexFilter() {
+		global $wgMathDisableTexFilter;
+		return MathHooks::mathCheckToString( $wgMathDisableTexFilter );
+	}
+
+
+	/**
+	 * @param string $inputType
+	 */
+	public function setInputType( $inputType ) {
+		$this->inputType = $inputType;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getInputType() {
+		return $this->inputType;
+	}
+}
