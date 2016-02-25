@@ -48,7 +48,9 @@ class SkinTimetotrade extends SkinTemplate {
      */
     function setupSkinUserCss( OutputPage $out ){
         parent::setupSkinUserCss( $out );
-        $out->addModuleStyles( "skins.timetotrade" );
+        $out->addModuleStyles( "skins.timetotrade.styles" );
+
+
 
         $out->addHeadItem('timetotradeCSS',
             '<link rel="stylesheet" href="//cdn.timetotrade.eu/sensatus_css.php">'
@@ -61,6 +63,10 @@ class SkinTimetotrade extends SkinTemplate {
         $out->addHeadItem('timetotradeAlerts',
             '<link rel="stylesheet" href="//cdn.timetotrade.eu/alerts.css">'
         );
+
+	$out->addHeadItem('tempSkin',
+		'<link rel="stylesheet" href="/skins/timetotrade/skin.css"'
+	);
     }
 }
 
