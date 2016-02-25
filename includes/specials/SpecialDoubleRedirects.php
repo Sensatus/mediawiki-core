@@ -28,12 +28,11 @@
  * @ingroup SpecialPage
  */
 class DoubleRedirectsPage extends QueryPage {
-
 	function __construct( $name = 'DoubleRedirects' ) {
 		parent::__construct( $name );
 	}
 
-	function isExpensive() {
+	public function isExpensive() {
 		return true;
 	}
 
@@ -52,8 +51,8 @@ class DoubleRedirectsPage extends QueryPage {
 	function reallyGetQueryInfo( $namespace = null, $title = null ) {
 		$limitToTitle = !( $namespace === null && $title === null );
 		$dbr = wfGetDB( DB_SLAVE );
-		$retval = array (
-			'tables' => array (
+		$retval = array(
+			'tables' => array(
 				'ra' => 'redirect',
 				'rb' => 'redirect',
 				'pa' => 'page',
@@ -91,21 +90,28 @@ class DoubleRedirectsPage extends QueryPage {
 				'rb.rd_from = pb.page_id',
 			)
 		);
+
 		if ( $limitToTitle ) {
 			$retval['conds']['pa.page_namespace'] = $namespace;
 			$retval['conds']['pa.page_title'] = $title;
 		}
+
 		return $retval;
 	}
 
-	function getQueryInfo() {
+	public function getQueryInfo() {
 		return $this->reallyGetQueryInfo();
 	}
 
 	function getOrderFields() {
-		return array ( 'ra.rd_namespace', 'ra.rd_title' );
+		return array( 'ra.rd_namespace', 'ra.rd_title' );
 	}
 
+	/**
+	 * @param Skin $skin
+	 * @param object $result Result row
+	 * @return string
+	 */
 	function formatResult( $skin, $result ) {
 		$titleA = Title::makeTitle( $result->namespace, $result->title );
 
@@ -116,10 +122,17 @@ class DoubleRedirectsPage extends QueryPage {
 		// using the filter of reallyGetQueryInfo.
 		if ( $result && !isset( $result->nsb ) ) {
 			$dbr = wfGetDB( DB_SLAVE );
-			$qi = $this->reallyGetQueryInfo( $result->namespace,
-					$result->title );
-			$res = $dbr->select( $qi['tables'], $qi['fields'],
-					$qi['conds'], __METHOD__ );
+			$qi = $this->reallyGetQueryInfo(
+				$result->namespace,
+				$result->title
+			);
+			$res = $dbr->select(
+				$qi['tables'],
+				$qi['fields'],
+				$qi['conds'],
+				__METHOD__
+			);
+
 			if ( $res ) {
 				$result = $dbr->fetchObject( $res );
 			}
@@ -143,7 +156,6 @@ class DoubleRedirectsPage extends QueryPage {
 			$this->msg( 'parentheses', $this->msg( 'editlink' )->text() )->escaped(),
 			array(),
 			array(
-				'redirect' => 'no',
 				'action' => 'edit'
 			)
 		);
@@ -160,7 +172,7 @@ class DoubleRedirectsPage extends QueryPage {
 		$lang = $this->getLanguage();
 		$arr = $lang->getArrow() . $lang->getDirMark();
 
-		return( "{$linkA} {$edit} {$arr} {$linkB} {$arr} {$linkC}" );
+		return ( "{$linkA} {$edit} {$arr} {$linkB} {$arr} {$linkC}" );
 	}
 
 	protected function getGroupName() {

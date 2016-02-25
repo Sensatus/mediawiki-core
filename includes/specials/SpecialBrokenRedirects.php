@@ -28,12 +28,11 @@
  * @ingroup SpecialPage
  */
 class BrokenRedirectsPage extends QueryPage {
-
 	function __construct( $name = 'BrokenRedirects' ) {
 		parent::__construct( $name );
 	}
 
-	function isExpensive() {
+	public function isExpensive() {
 		return true;
 	}
 
@@ -49,8 +48,9 @@ class BrokenRedirectsPage extends QueryPage {
 		return $this->msg( 'brokenredirectstext' )->parseAsBlock();
 	}
 
-	function getQueryInfo() {
+	public function getQueryInfo() {
 		$dbr = wfGetDB( DB_SLAVE );
+
 		return array(
 			'tables' => array(
 				'redirect',
@@ -88,13 +88,13 @@ class BrokenRedirectsPage extends QueryPage {
 	 * @return array
 	 */
 	function getOrderFields() {
-		return array ( 'rd_namespace', 'rd_title', 'rd_from' );
+		return array( 'rd_namespace', 'rd_title', 'rd_from' );
 	}
 
 	/**
-	 * @param $skin Skin
-	 * @param $result
-	 * @return String
+	 * @param Skin $skin
+	 * @param object $result Result row
+	 * @return string
 	 */
 	function formatResult( $skin, $result ) {
 		$fromObj = Title::makeTitle( $result->namespace, $result->title );
@@ -138,7 +138,7 @@ class BrokenRedirectsPage extends QueryPage {
 
 		$out = $from . $this->msg( 'word-separator' )->escaped();
 
-		if( $this->getUser()->isAllowed( 'delete' ) ) {
+		if ( $this->getUser()->isAllowed( 'delete' ) ) {
 			$links[] = Linker::linkKnown(
 				$fromObj,
 				$this->msg( 'brokenredirects-delete' )->escaped(),
@@ -147,8 +147,10 @@ class BrokenRedirectsPage extends QueryPage {
 			);
 		}
 
-		$out .= $this->msg( 'parentheses' )->rawParams( $this->getLanguage()->pipeList( $links ) )->escaped();
+		$out .= $this->msg( 'parentheses' )->rawParams( $this->getLanguage()
+			->pipeList( $links ) )->escaped();
 		$out .= " {$arr} {$to}";
+
 		return $out;
 	}
 

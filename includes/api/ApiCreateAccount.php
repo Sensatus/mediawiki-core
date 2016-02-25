@@ -21,6 +21,7 @@
  *
  * @file
  */
+use MediaWiki\Logger\LoggerFactory;
 
 /**
  * Unit to authenticate account registration attempts to the current wiki.
@@ -29,29 +30,46 @@
  */
 class ApiCreateAccount extends ApiBase {
 	public function execute() {
+		// If we're in a mode that breaks the same-origin policy, no tokens can
+		// be obtained
+		if ( $this->lacksSameOriginSecurity() ) {
+			$this->dieUsage(
+				'Cannot create account when the same-origin policy is not applied', 'aborted'
+			);
+		}
 
 		// $loginForm->addNewaccountInternal will throw exceptions
 		// if wiki is read only (already handled by api), user is blocked or does not have rights.
 		// Use userCan in order to hit GlobalBlock checks (according to Special:userlogin)
 		$loginTitle = SpecialPage::getTitleFor( 'Userlogin' );
 		if ( !$loginTitle->userCan( 'createaccount', $this->getUser() ) ) {
-			$this->dieUsage( 'You do not have the right to create a new account', 'permdenied-createaccount' );
+			$this->dieUsage(
+				'You do not have the right to create a new account',
+				'permdenied-createaccount'
+			);
 		}
 		if ( $this->getUser()->isBlockedFromCreateAccount() ) {
-			$this->dieUsage( 'You cannot create a new account because you are blocked', 'blocked' );
+			$this->dieUsage(
+				'You cannot create a new account because you are blocked',
+				'blocked',
+				0,
+				array( 'blockinfo' => ApiQueryUserInfo::getBlockInfo( $this->getUser()->getBlock() ) )
+			);
 		}
 
 		$params = $this->extractRequestParams();
-
-		$result = array();
 
 		// Init session if necessary
 		if ( session_id() == '' ) {
 			wfSetupSession();
 		}
 
-		if( $params['mailpassword'] && !$params['email'] ) {
+		if ( $params['mailpassword'] && !$params['email'] ) {
 			$this->dieUsageMsg( 'noemail' );
+		}
+
+		if ( $params['language'] && !Language::isSupportedLanguage( $params['language'] ) ) {
+			$this->dieUsage( 'Invalid language parameter', 'langinvalid' );
 		}
 
 		$context = new DerivativeContext( $this->getContext() );
@@ -74,26 +92,33 @@ class ApiCreateAccount extends ApiBase {
 
 		$loginForm = new LoginForm();
 		$loginForm->setContext( $context );
+		Hooks::run( 'AddNewAccountApiForm', array( $this, $loginForm ) );
 		$loginForm->load();
 
 		$status = $loginForm->addNewaccountInternal();
+		LoggerFactory::getInstance( 'authmanager' )->info( 'Account creation attempt via API', array(
+			'event' => 'accountcreation',
+			'status' => $status,
+		) );
 		$result = array();
-		if( $status->isGood() ) {
+		if ( $status->isGood() ) {
 			// Success!
 			$user = $status->getValue();
 
-			// If we showed up language selection links, and one was in use, be
-			// smart (and sensible) and save that language as the user's preference
-			global $wgLoginLanguageSelector, $wgEmailAuthentication;
-			if( $wgLoginLanguageSelector && $params['language'] ) {
+			if ( $params['language'] ) {
 				$user->setOption( 'language', $params['language'] );
 			}
 
-			if( $params['mailpassword'] ) {
+			if ( $params['mailpassword'] ) {
 				// If mailpassword was set, disable the password and send an email.
 				$user->setPassword( null );
-				$status->merge( $loginForm->mailPasswordInternal( $user, false, 'createaccount-title', 'createaccount-text' ) );
-			} elseif( $wgEmailAuthentication && Sanitizer::validateEmail( $user->getEmail() ) ) {
+				$status->merge( $loginForm->mailPasswordInternal(
+					$user,
+					false,
+					'createaccount-title',
+					'createaccount-text'
+				) );
+			} elseif ( $this->getConfig()->get( 'EmailAuthentication' ) && Sanitizer::validateEmail( $user->getEmail() ) ) {
 				// Send out an email authentication message if needed
 				$status->merge( $user->sendConfirmationMail() );
 			}
@@ -101,7 +126,7 @@ class ApiCreateAccount extends ApiBase {
 			// Save settings (including confirmation token)
 			$user->saveSettings();
 
-			wfRunHooks( 'AddNewAccount', array( $user, $params['mailpassword'] ) );
+			Hooks::run( 'AddNewAccount', array( $user, $params['mailpassword'] ) );
 
 			if ( $params['mailpassword'] ) {
 				$logAction = 'byemail';
@@ -120,48 +145,37 @@ class ApiCreateAccount extends ApiBase {
 
 		$apiResult = $this->getResult();
 
-		if( $status->hasMessage( 'sessionfailure' ) || $status->hasMessage( 'nocookiesfornew' ) ) {
+		if ( $status->hasMessage( 'sessionfailure' ) || $status->hasMessage( 'nocookiesfornew' ) ) {
 			// Token was incorrect, so add it to result, but don't throw an exception
 			// since not having the correct token is part of the normal
 			// flow of events.
 			$result['token'] = LoginForm::getCreateaccountToken();
-			$result['result'] = 'needtoken';
-		} elseif( !$status->isOK() ) {
+			$result['result'] = 'NeedToken';
+		} elseif ( !$status->isOK() ) {
 			// There was an error. Die now.
-			// Cannot use dieUsageMsg() directly because extensions
-			// might return custom error messages.
-			$errors = $status->getErrorsArray();
-			if( $errors[0] instanceof Message ) {
-				$code = 'aborted';
-				$desc = $errors[0];
-			} else {
-				$code = array_shift( $errors[0] );
-				$desc = wfMessage( $code, $errors[0] );
-			}
-			$this->dieUsage( $desc, $code );
-		} elseif( !$status->isGood() ) {
+			$this->dieStatus( $status );
+		} elseif ( !$status->isGood() ) {
 			// Status is not good, but OK. This means warnings.
-			$result['result'] = 'warning';
+			$result['result'] = 'Warning';
 
 			// Add any warnings to the result
 			$warnings = $status->getErrorsByType( 'warning' );
-			if( $warnings ) {
-				foreach( $warnings as &$warning ) {
-					$apiResult->setIndexedTagName( $warning['params'], 'param' );
+			if ( $warnings ) {
+				foreach ( $warnings as &$warning ) {
+					ApiResult::setIndexedTagName( $warning['params'], 'param' );
 				}
-				$apiResult->setIndexedTagName( $warnings, 'warning' );
+				ApiResult::setIndexedTagName( $warnings, 'warning' );
 				$result['warnings'] = $warnings;
 			}
 		} else {
 			// Everything was fine.
-			$result['result'] = 'success';
+			$result['result'] = 'Success';
 		}
 
-		$apiResult->addValue( null, 'createaccount', $result );
-	}
+		// Give extensions a chance to modify the API result data
+		Hooks::run( 'AddNewAccountApiResult', array( $this, $loginForm, &$result ) );
 
-	public function getDescription() {
-		return 'Create a new user account.';
+		$apiResult->addValue( null, 'createaccount', $result );
 	}
 
 	public function mustBePosted() {
@@ -177,18 +191,19 @@ class ApiCreateAccount extends ApiBase {
 	}
 
 	public function getAllowedParams() {
-		global $wgEmailConfirmToEdit;
 		return array(
 			'name' => array(
 				ApiBase::PARAM_TYPE => 'user',
 				ApiBase::PARAM_REQUIRED => true
 			),
-			'password' => null,
+			'password' => array(
+				ApiBase::PARAM_TYPE => 'password',
+			),
 			'domain' => null,
 			'token' => null,
 			'email' => array(
 				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_REQUIRED => $wgEmailConfirmToEdit
+				ApiBase::PARAM_REQUIRED => $this->getConfig()->get( 'EmailConfirmToEdit' ),
 			),
 			'realname' => null,
 			'mailpassword' => array(
@@ -200,95 +215,12 @@ class ApiCreateAccount extends ApiBase {
 		);
 	}
 
-	public function getParamDescription() {
-		$p = $this->getModulePrefix();
+	protected function getExamplesMessages() {
 		return array(
-			'name' => 'Username',
-			'password' => "Password (ignored if {$p}mailpassword is set)",
-			'domain' => 'Domain for external authentication (optional)',
-			'token' => 'Account creation token obtained in first request',
-			'email' => 'Email address of user (optional)',
-			'realname' => 'Real name of user (optional)',
-			'mailpassword' => 'If set to any value, a random password will be emailed to the user',
-			'reason' => 'Optional reason for creating the account to be put in the logs',
-			'language' => 'Language code to set as default for the user (optional, defaults to content language)'
-		);
-	}
-
-	public function getResultProperties() {
-		return array(
-			'createaccount' => array(
-				'result' => array(
-					ApiBase::PROP_TYPE => array(
-						'success',
-						'warning',
-						'needtoken'
-					)
-				),
-				'username' => array(
-					ApiBase::PROP_TYPE => 'string',
-					ApiBase::PROP_NULLABLE => true
-				),
-				'userid' => array(
-					ApiBase::PROP_TYPE => 'int',
-					ApiBase::PROP_NULLABLE => true
-				),
-				'token' => array(
-					ApiBase::PROP_TYPE => 'string',
-					ApiBase::PROP_NULLABLE => true
-				),
-			)
-		);
-	}
-
-	public function getPossibleErrors() {
-		// Note the following errors aren't possible and don't need to be listed:
-		// sessionfailure, nocookiesfornew, badretype
-		$localErrors = array(
-			'wrongpassword', // Actually caused by wrong domain field. Riddle me that...
-			'sorbs_create_account_reason',
-			'noname',
-			'userexists',
-			'password-name-match', // from User::getPasswordValidity
-			'password-login-forbidden', // from User::getPasswordValidity
-			'noemailtitle',
-			'invalidemailaddress',
-			'externaldberror',
-			'acct_creation_throttle_hit',
-		);
-
-		$errors = parent::getPossibleErrors();
-		// All local errors are from LoginForm, which means they're actually message keys.
-		foreach( $localErrors as $error ) {
-			$errors[] = array( 'code' => $error, 'info' => wfMessage( $error )->parse() );
-		}
-
-		$errors[] = array(
-			'code' => 'permdenied-createaccount',
-			'info' => 'You do not have the right to create a new account'
-		);
-		$errors[] = array(
-			'code' => 'blocked',
-			'info' => 'You cannot create a new account because you are blocked'
-		);
-		$errors[] = array(
-			'code' => 'aborted',
-			'info' => 'Account creation aborted by hook (info may vary)'
-		);
-
-		// 'passwordtooshort' has parameters. :(
-		global $wgMinimalPasswordLength;
-		$errors[] = array(
-			'code' => 'passwordtooshort',
-			'info' => wfMessage( 'passwordtooshort', $wgMinimalPasswordLength )->parse()
-		);
-		return $errors;
-	}
-
-	public function getExamples() {
-		return array(
-			'api.php?action=createaccount&name=testuser&password=test123',
-			'api.php?action=createaccount&name=testmailuser&mailpassword=true&reason=MyReason',
+			'action=createaccount&name=testuser&password=test123'
+				=> 'apihelp-createaccount-example-pass',
+			'action=createaccount&name=testmailuser&mailpassword=true&reason=MyReason'
+				=> 'apihelp-createaccount-example-mail',
 		);
 	}
 

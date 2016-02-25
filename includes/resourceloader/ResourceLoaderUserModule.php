@@ -27,37 +27,38 @@
  */
 class ResourceLoaderUserModule extends ResourceLoaderWikiModule {
 
-	/* Protected Methods */
 	protected $origin = self::ORIGIN_USER_INDIVIDUAL;
 
 	/**
-	 * @param $context ResourceLoaderContext
-	 * @return array
+	 * Get list of pages used by this module
+	 *
+	 * @param ResourceLoaderContext $context
+	 * @return array List of pages
 	 */
 	protected function getPages( ResourceLoaderContext $context ) {
-		$username = $context->getUser();
-
-		if ( $username === null ) {
+		$allowUserJs = $this->getConfig()->get( 'AllowUserJs' );
+		$allowUserCss = $this->getConfig()->get( 'AllowUserCss' );
+		if ( !$allowUserJs && !$allowUserCss ) {
 			return array();
 		}
 
-		// Get the normalized title of the user's user page
-		$userpageTitle = Title::makeTitleSafe( NS_USER, $username );
-
-		if ( !$userpageTitle instanceof Title ) {
+		$user = $context->getUserObj();
+		if ( !$user || $user->isAnon() ) {
 			return array();
 		}
 
-		$userpage = $userpageTitle->getPrefixedDBkey(); // Needed so $excludepages works
+		// Needed so $excludepages works
+		$userPage = $user->getUserPage()->getPrefixedDBkey();
 
-		$pages = array(
-			"$userpage/common.js" => array( 'type' => 'script' ),
-			"$userpage/" . $context->getSkin() . '.js' =>
-				array( 'type' => 'script' ),
-			"$userpage/common.css" => array( 'type' => 'style' ),
-			"$userpage/" . $context->getSkin() . '.css' =>
-				array( 'type' => 'style' ),
-		);
+		$pages = array();
+		if ( $allowUserJs ) {
+			$pages["$userPage/common.js"] = array( 'type' => 'script' );
+			$pages["$userPage/" . $context->getSkin() . '.js'] = array( 'type' => 'script' );
+		}
+		if ( $allowUserCss ) {
+			$pages["$userPage/common.css"] = array( 'type' => 'style' );
+			$pages["$userPage/" . $context->getSkin() . '.css'] = array( 'type' => 'style' );
+		}
 
 		// Hack for bug 26283: if we're on a preview page for a CSS/JS page,
 		// we need to exclude that page from this module. In that case, the excludepage
@@ -71,9 +72,9 @@ class ResourceLoaderUserModule extends ResourceLoaderWikiModule {
 		return $pages;
 	}
 
-	/* Methods */
-
 	/**
+	 * Get group name
+	 *
 	 * @return string
 	 */
 	public function getGroup() {

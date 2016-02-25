@@ -38,7 +38,7 @@
 		// making sure it is actually using text() and attr() (or something with the same effect)
 
 		// Text escaping
-		html = '<div><span><html:msg key="properfoo"></span></div>';
+		html = '<div><span><html:msg key="properfoo" /></span></div>';
 		$lc = $( html ).localize().find( 'span' );
 
 		assert.strictEqual( $lc.text(), mw.msg( 'properfoo' ), 'Content is inserted as text, not as html.' );
@@ -63,7 +63,7 @@
 		var html, $lc, x, sitename = 'Wikipedia';
 
 		// Message key prefix
-		html = '<div><span title-msg="lorem"><html:msg key="ipsum"></span></div>';
+		html = '<div><span title-msg="lorem"><html:msg key="ipsum" /></span></div>';
 		$lc = $( html ).localize( {
 			prefix: 'foo-'
 		} ).find( 'span' );
@@ -73,11 +73,11 @@
 
 		// Variable keys mapping
 		x = 'bar';
-		html = '<div><span title-msg="title"><html:msg key="label"></span></div>';
+		html = '<div><span title-msg="title"><html:msg key="label" /></span></div>';
 		$lc = $( html ).localize( {
 			keys: {
-				'title': 'foo-' + x + '-title',
-				'label': 'foo-' + x + '-label'
+				title: 'foo-' + x + '-title',
+				label: 'foo-' + x + '-label'
 			}
 		} ).find( 'span' );
 
@@ -85,10 +85,10 @@
 		assert.strictEqual( $lc.text(), 'The Bars', 'Variable keys mapping - text' );
 
 		// Passing parameteters to mw.msg
-		html = '<div><span><html:msg key="foo-welcome"></span></div>';
+		html = '<div><span><html:msg key="foo-welcome" /></span></div>';
 		$lc = $( html ).localize( {
 			params: {
-				'foo-welcome': [sitename, 'yesterday']
+				'foo-welcome': [ sitename, 'yesterday' ]
 			}
 		} ).find( 'span' );
 
@@ -96,16 +96,16 @@
 
 		// Combination of options prefix, params and keys
 		x = 'bazz';
-		html = '<div><span title-msg="title"><html:msg key="label"></span></div>';
+		html = '<div><span title-msg="title"><html:msg key="label" /></span></div>';
 		$lc = $( html ).localize( {
 			prefix: 'foo-',
 			keys: {
-				'title': x + '-title',
-				'label': x + '-label'
+				title: x + '-title',
+				label: x + '-label'
 			},
 			params: {
-				'title': [sitename, '3 minutes ago'],
-				'label': [sitename, '3 minutes ago']
+				title: [ sitename, '3 minutes ago' ],
+				label: [ sitename, '3 minutes ago' ]
 
 			}
 		} ).find( 'span' );
