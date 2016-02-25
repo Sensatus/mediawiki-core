@@ -51,15 +51,15 @@ class SkinTimetotrade extends SkinTemplate {
         $out->addModuleStyles( "skins.timetotrade" );
 
         $out->addHeadItem('timetotradeCSS',
-            '<link rel="stylesheet" href="//timetotrade.eu/sensatus_css.php">'
+            '<link rel="stylesheet" href="//cdn.timetotrade.eu/sensatus_css.php">'
         );
 
         $out->addHeadItem('timetotradeLess',
-            '<link rel="stylesheet" href="//cdn.sensatus.org.uk/min/css/less/site.css">'
+            '<link rel="stylesheet" href="//cdn.timetotrade.eu/min/css/less/site.css">'
         );
 
         $out->addHeadItem('timetotradeAlerts',
-            '<link rel="stylesheet" href="//cdn.sensatus.org.uk/alerts.css">'
+            '<link rel="stylesheet" href="//cdn.timetotrade.eu/alerts.css">'
         );
     }
 }
@@ -93,22 +93,18 @@ class TimetotradeTemplate extends BaseTemplate {
             &#169; 2005-<?php echo date('Y'); ?> Sensatus (<a href="//timetotrade.eu/tickets.php?view=createticket">Contact Us</a>)
         </footer>
 
-        <?php $this->printTrail(); ?>
+<!--        <?php $this->printTrail(); ?>  -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-        <script type="text/javascript">
-
-            var _gaq = _gaq || [];
-            _gaq.push(['_setAccount', 'UA-1534620-1']);
-            _gaq.push(['_trackPageview']);
-
-            (function() {
-                var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-            })();
-
-        </script>
-
+     ga('create', 'UA-1534620-1', 'auto', {'allowLinker': true});
+     ga('require', 'linker');
+     ga('linker:autoLink', ['timetotrade.eu']);
+     ga('send', 'pageview');
+</script>
 
         </body>
         </html><?php
@@ -128,7 +124,7 @@ class TimetotradeTemplate extends BaseTemplate {
     <header>
 
         <a href="//timetotrade.eu">
-            <img src="//cdn.sensatus.org.uk/images/logos/25px.png" alt="timetotrade">
+            <img src="//cdn.timetotrade.eu/images/logos/25px.png" alt="timetotrade">
         </a>
 
         {$this->getNavigationHTML()}
@@ -236,10 +232,10 @@ EOF;
     </ul>
   </li>
   <li class="hasChildren">
-    <a href="//timetotrade.eu/trade.php?show=orderhistory" id="tl_trade">Trade</a>
+    <a href="//timetotrade.eu/broker/registration/" id="tl_trade">Trade</a>
     <ul>
       <li>
-        <a href="//timetotrade.eu/trade.php?show=orderhistory" id="orderHistory">Order&nbsp;History</a>
+        <a href="//timetotrade.eu/broker/registration/">Open&nbsp;Trading&nbsp;Account</a>
       </li>
     </ul>
   </li>
