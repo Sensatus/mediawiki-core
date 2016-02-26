@@ -16,12 +16,12 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 }
 
 class CategoryTreePage extends SpecialPage {
-	var $target = '';
+	public $target = '';
 
 	/**
 	 * @var CategoryTree
 	 */
-	var $tree = null;
+	public $tree = null;
 
 	function __construct() {
 		parent::__construct( 'CategoryTree', '', true );
@@ -142,4 +142,9 @@ class CategoryTreePage extends SpecialPage {
 		$output = $this->getOutput();
 		$output->addHTML( Xml::tags( 'form', array( 'name' => 'categorytree', 'method' => 'get', 'action' => $wgScript, 'id' => 'mw-categorytree-form' ), $fieldset ) );
 	}
+
+	protected function getGroupName() {
+		return 'pages';
+	}
+
 }

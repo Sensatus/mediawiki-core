@@ -26,9 +26,9 @@ $magicWords['ar'] = array(
 	'categorytree' => array( 0, 'شجرة_تصنيف' ),
 );
 
-/** Egyptian Spoken Arabic (مصرى) */
+/** Egyptian Arabic (مصرى) */
 $magicWords['arz'] = array(
-	'categorytree' => array( 0, 'شجرة_تصنيف', 'categorytree' ),
+	'categorytree' => array( 0, 'شجرة_تصنيف' ),
 );
 
 /** Breton (brezhoneg) */
@@ -48,7 +48,7 @@ $magicWords['de'] = array(
 
 /** Zazaki (Zazaki) */
 $magicWords['diq'] = array(
-	'categorytree' => array( 0, 'darakategoriye' ),
+	'categorytree' => array( 0, 'darakategori' ),
 );
 
 /** Esperanto (Esperanto) */
@@ -76,6 +76,11 @@ $magicWords['fr'] = array(
 	'categorytree' => array( 0, 'arbrecatégories', 'arbrecats' ),
 );
 
+/** Western Frisian (Frysk) */
+$magicWords['fy'] = array(
+	'categorytree' => array( 0, 'kategorybeam' ),
+);
+
 /** Galician (galego) */
 $magicWords['gl'] = array(
 	'categorytree' => array( 0, 'árboredecategorías' ),
@@ -84,6 +89,11 @@ $magicWords['gl'] = array(
 /** Hebrew (עברית) */
 $magicWords['he'] = array(
 	'categorytree' => array( 0, 'עץ_קטגוריה' ),
+);
+
+/** Hindi (हिन्दी) */
+$magicWords['hi'] = array(
+	'categorytree' => array( 0, 'श्रेणी_वृक्ष' ),
 );
 
 /** Igbo (Igbo) */
@@ -161,6 +171,11 @@ $magicWords['nl'] = array(
 	'categorytree' => array( 0, 'categorieboom' ),
 );
 
+/** Norwegian Nynorsk (norsk nynorsk) */
+$magicWords['nn'] = array(
+	'categorytree' => array( 0, 'kategoritre' ),
+);
+
 /** Polish (polski) */
 $magicWords['pl'] = array(
 	'categorytree' => array( 0, 'drzewokategorii' ),
@@ -216,14 +231,19 @@ $magicWords['ur'] = array(
 	'categorytree' => array( 0, 'شجر_زمرہ' ),
 );
 
-/** Uzbek (oʻzbekcha) */
+/** Uzbek (oʻzbekcha/ўзбекча) */
 $magicWords['uz'] = array(
 	'categorytree' => array( 0, 'turkumiyerarxiyasi', 'turkumdaraxti' ),
 );
 
 /** Vietnamese (Tiếng Việt) */
 $magicWords['vi'] = array(
-	'categorytree' => array( 0, 'câythểloại' ),
+	'categorytree' => array( 0, 'cây_thể_loại', 'câythểloại' ),
+);
+
+/** Yiddish (ייִדיש) */
+$magicWords['yi'] = array(
+	'categorytree' => array( 0, 'קאטעגאריע_בוים' ),
 );
 
 /** Simplified Chinese (中文（简体）‎) */
