@@ -1,0 +1,38 @@
+{
+  "name": "timetotrade_v2",
+  "author": [
+    "Sensatus UK Ltd",
+    "..."
+  ],
+  "url": "https://wiki.timetotrade.eu",
+  "descriptionmsg": "timetotrade-desc",
+  "namemsg": "skinname-timetotrade",
+  "license-name": "Copyright Sensatus UK Ltd",
+  "type": "skin",
+  "ValidSkinNames": {
+    "timetotrade_v2": "timetotrade_v2"
+  },
+  "MessageDirs": {
+    "timetotrade_v2": [
+      "il8n"
+    ]
+  },
+  "ResourceModules": {
+    "skins.timetotrade_v2.styles": {
+      "position": "top",
+      "styles": {
+        "resources/screen.css": {
+          "media": "screen"
+        }
+      }
+    }
+  },
+  "ResourceFileModulePaths": {
+    "localBasePath": "",
+    "remoteSkinPath": "timetotrade_v2"
+  },
+  "AutoloadClasses": {
+    "Skintimetotrade_v2": "Skintimetotrade_v2.php"
+  },
+  "manifest_version": 1
+}

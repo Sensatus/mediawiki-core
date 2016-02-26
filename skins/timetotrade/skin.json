@@ -1,0 +1,39 @@
+{
+        "name": "Timetotrade",
+        "author": [
+                "..."
+        ],
+        "url": "https://wiki.timetotrade.eu",
+        "descriptionmsg": "timetotrade-desc",
+        "namemsg": "skinname-timetotrade",
+        "license-name": "GPL-2.0+",
+        "type": "skin",
+        "ValidSkinNames": {
+                "timetotrade": "Timetotrade"
+        },
+        "SkinOOUIThemes": {
+                "timetotrade": "Apex"
+        },
+        "MessagesDirs": {
+                "timetotrade": [
+                        "i18n"
+                ]
+        },
+        "ResourceModules": {
+                "skins.timetotrade.styles": {
+                        "position": "top",
+                        "styles": {
+                                "skin.css": {
+                                        "media": "screen"
+                                }
+                        }
+                }
+        },
+        "ResourceFileModulePaths": {
+                "localBasePath": "",
+                "remoteSkinPath": "timetotrade"
+        },
+        "AutoloadClasses": {
+        },
+        "manifest_version": 1
+}
