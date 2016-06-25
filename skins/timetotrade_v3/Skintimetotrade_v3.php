@@ -59,7 +59,7 @@ class Skintimetotrade_v3 extends SkinTemplate {
  *
  * @ingroup Skins
  */
-class Timetotrade_v2Template extends BaseTemplate {
+class Timetotrade_v3Template extends BaseTemplate {
 
     /**
      * Outputs the entire contents of the page
