@@ -155,106 +155,57 @@ EOF;
 <nav class="noJS">
 <ul class="root">
   <li class="hasChildren">
-    <a href="//timetotrade.eu/summary.php" id="tl_portfolio">Portfolio</a>
+    <a href="/Introduction_to_timetotrade">Products</a>
     <ul>
-      <li class="">
-        <a href="//timetotrade.eu/summary.php" id="portfolio">Portfolio</a>
+      <li><a href="/Trigger_Trading_Technology">Trigger&nbsp;Trading</a></li>
+      <li><a href="/Backtest_Trading_Strategies">Strategy&nbsp;Builder</a></li>
+      <li><a href="/Trade_Off_The_Chart">Charts&nbsp;&amp;&nbsp;Alerts</a></li>
+      <li><a href="/UK_HMRC_Capital_Gains_Tax_Calculator">CGT&nbsp;Calculator</a></li>
+      <li><a href="/Investment_Club_Software">Investment&nbsp;Clubs</a></li>
+      <li><a href="/Live_Account_Features">Live&nbsp;Account&nbsp;Features</a></li>
+    </ul>
+  </li>
+  <li class="hasChildren">
+    <a href="/">Information</a>
+    <ul>
+      <li><a href="/">Help Wiki</a></li>
+      <li>
+        <a href="https://platform.timetotrade.com/account/dealing-charges">Dealing&nbsp;Charges</a>
       </li>
-      <li class="">
-        <a href="//timetotrade.eu/ledger.php" id="accounts">Accounts</a>
-      </li>
-      <li class="">
-        <a href="//timetotrade.eu/markets.php" id="markets">Markets</a>
-      </li>
-      <li class="">
-        <a href="//timetotrade.eu/portfolio.php" id="watchlists">Watchlists</a>
+      <li>
+        <a href="https://platform.timetotrade.com/info/fee-schedule">Fee&nbsp;Schedule</a>
       </li>
       <li class="hasChildren">
-        <a href="//timetotrade.eu/competitions.php" id="competitions">Competitions</a>
+        <a href="//timetotrade.eu/buildalert.php" id="tl_charts">Terms&nbsp;&amp;&nbsp;Conditions</a>
         <ul>
           <li>
-            <a href="//timetotrade.eu/competitions.php" id="enterCompetitions">Competitions</a>
+            <a href="https://platform.timetotrade.com/info/terms/shares" id="terms">Share&nbsp;Terms&nbsp;&amp;&nbsp;Conditions</a>
           </li>
           <li>
-            <a href="//timetotrade.eu/competitions.php?show=entry" id="createCompetitions">Create&nbsp;Competitions</a>
+            <a href="https://platform.timetotrade.com/info/risk-warnings/shares" id="sharesRiskWarning">Shares&nbsp;Risk&nbsp;Warning</a>
+          </li>
+          <li>
+            <a href="https://platform.timetotrade.com/info/terms/leveraged" id="leveragedTerms">Spreadbet,&nbsp;CFD,&nbsp;FX&nbsp;Terms&nbsp;&amp;&nbsp;Conditions</a>
+          </li>
+          <li>
+            <a href="https://platform.timetotrade.com/info/risk-warnings/leveraged" id="derivativeRiskWarning">Spreadbet,&nbsp;CFD,&nbsp;FX&nbsp;Risk&nbsp;Warning</a>
+          </li>
+          <li>
+            <a href="https://platform.timetotrade.com/info/order-execution-policy" id="orderExecutionPolicy">Order&nbsp;Execution&nbsp;Policy</a>
+          </li>
+          <li>
+            <a href="https://platform.timetotrade.com/info/conflicts-of-interest" id="conflictsOfInterest">Conflicts&nbsp;Of&nbsp;Interests</a>
+          </li>
+          <li>
+            <a href="https://timetotrade.com/info/terms/subscription" id="subscriptionTerms">Subscription&nbsp;Terms</a>
           </li>
         </ul>
       </li>
-      <li class="hasChildren">
-        <a href="//timetotrade.eu/taxation.php" id="taxation">Taxation</a>
-        <ul>
-          <li>
-            <a href="//timetotrade.eu/cgt_uk.php" id="captialGains">Capital&nbsp;Gains</a>
-          </li>
-          <li>
-            <a href="//timetotrade.eu/income_tax_personal.php" id="incomeTax">Income&nbsp;Tax</a>
-          </li>
-        </ul>
-      </li>
-      <li>
-        <a href="//timetotrade.eu/reports.php" id="reports">Reports</a>
-      </li>
     </ul>
   </li>
-  <li class="hasChildren">
-    <a href="//timetotrade.eu/trade.php" id="tl_trade">Trade</a>
-    <ul>
-      <li>
-        <a href="https://platform.timetotrade.eu/user/kyc/address">Apply&nbsp;Now</a>
-      </li>
-      <li>
-        <a href="https://platform.timetotrade.eu/club/kyc">Investment&nbsp;Club</a>
-      </li>
-      <li>
-        <a href="https://platform.timetotrade.eu/account/dealing-charges">Dealing&nbsp;Charges</a>
-      </li>
-      <li>
-        <a href="https://platform.timetotrade.eu/info/fee-schedule">Fee&nbsp;Schedule</a>
-      </li>
-    </ul>
-  </li>
-  <li class="hasChildren">
-    <a href="//timetotrade.eu/buildalert.php" id="tl_charts">Charts</a>
-    <ul>
-      <li>
-        <a href="//timetotrade.eu/buildalert.php" id="fullWidth">Full&nbsp;Width</a>
-      </li>
-      <li>
-        <a href="//timetotrade.eu/buildalert.php?fullscreen=0" id="tools">Tools</a>
-      </li>
-    </ul>
-  </li>
-  <li class="hasChildren">
-    <a href="//forum.timetotrade.eu" id="tl_river">Community</a>
-    <ul>
-      <li>
-        <a href="//forum.timetotrade.eu" id="publicForum">Public&nbsp;Forum</a>
-      </li>
-      <li>
-        <a href="//timetotrade.eu/managefiles.php" id="documentLibrary">Document&nbsp;Library</a>
-      </li>
-      <li>
-        <a href="//blog.timetotrade.eu/" id="blog">Blog</a>
-      </li>
-    </ul>
-  </li>
-  <li class="hasChildren">
-    <a href="//wiki.timetotrade.eu" id="tl_help">Help</a>
-    <ul>
-      <li>
-        <a href="//timetotrade.eu/videos.php" id="helpVideos">Help&nbsp;Videos</a>
-      </li>
-      <li>
-        <a href="//wiki.timetotrade.eu/" id="helpManual">Help&nbsp;Manual</a>
-      </li>
-      <li>
-        <a href="//timetotrade.eu/packages.php" id="packages">Pricing</a>
-      </li>
-      <li>
-        <a href="//timetotrade.eu/tickets.php?view=createticket" id="contactUs">Contact&nbsp;Us</a>
-      </li>
-    </ul>
-  </li>
+  <li><a href="//timetotrade.com/community">Community</a></li>
+  <li><a href="/Contact_Us">Contact Us</a></li>
+  <li><a href="//timetotrade.com/about-us">About</a></li>
 </ul>
 </nav>
 EOF;
