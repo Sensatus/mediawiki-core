@@ -175,6 +175,9 @@ EOF;
       <li>
         <a href="https://platform.timetotrade.com/info/fee-schedule">Fee&nbsp;Schedule</a>
       </li>
+      <li>
+        <a href="https://platform.timetotrade.com/info/execution-venues">Execution&nbsp;Venues</a>
+      </li>
       <li class="hasChildren">
         <a href="//timetotrade.eu/buildalert.php" id="tl_charts">Terms&nbsp;&amp;&nbsp;Conditions</a>
         <ul>
